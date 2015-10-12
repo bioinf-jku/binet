@@ -18,7 +18,7 @@ or check http://www.gnu.org/licenses/gpl-2.0.html
 
 
 
-This software re-uses code taken from scikits.cuda, scikit-learn and cudamat.
+This software re-uses code taken from scikits-cuda, scikit-learn and cudamat.
 Their respective licenses are listed in the following:
 
 

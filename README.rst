@@ -1,18 +1,19 @@
-BINET
+binet
 =====
 
-binet is a Deep Learning library for Python that implements Deep Neural
-Networks, and was developed at the
-`Institute of Bioinformatics <http://www.bioinf.jku.at`_
-at the `Johannes Kepler University Linz <http://www.jku.at>`_.
+binet is a Deep Learning library for Python that was developed by
+`Thomas Unterthiner <http://www.bioinf.jku.at/people/unterthiner/>`_
+at the `Institute of Bioinformatics <http://www.bioinf.jku.at>`_
+of the `Johannes Kepler University Linz <http://www.jku.at>`_.
 
 binet can seamlessly and transparently switch between running on the CPU and
 on the GPU, using PyCUDA and scikits-cuda.
 
 The library was written with the goal of easily experimenting with new
 ideas regarding neural nets. While it is written with high performance
-in mind, ease of extensibility and to internal net state was
-a stated design goal.
+in mind, ease of extensibility and to internal net state was the main
+stated design goal. As a result binet is fast, super flexible and quite
+a bit hackish :)
 
 
 Examples
@@ -21,8 +22,6 @@ Examples
 A simple neural network on MNIST with 2 hidden layers::
 
 
-
-```python
     import os
     from binet import *
 
@@ -32,11 +31,12 @@ A simple neural network on MNIST with 2 hidden layers::
     dataset = load_dataset("mnist")
 
     layers = (dataset[0].shape[1], 256, 256, dataset[1].shape[1])
-    net = NeuralNet(layers, max_iter=10, learning_rate=0.1, verbose=True,
-                    activation="relu", shuffle_data=False, dropout=0.5,
-                    input_dropout=0.2)
+    net = NeuralNet(layers, max_iter=10, learning_rate=0.1, verbose=True, \
+        activation="relu", shuffle_data=False, dropout=0.5, \
+        input_dropout=0.2)
     net = train(net, dataset, use_gpu=True, skip_output=1)
-```
+
+
 
 Installation
 ------------
@@ -55,6 +55,6 @@ binet requires:
 
 License
 -------
-binet is licensed GPL, Version 2 or higher. It also uses some code
-from the scikits.cuda, scikit-learn and cudamat project. See ``License.rst``
-for more details.
+binet is licensed under the
+`General Public License (GPL) Version 2 or higher <http://www.gnu.org/licenses/gpl-2.0.html>`_.
+See ``License.rst`` for the full, gory details.
