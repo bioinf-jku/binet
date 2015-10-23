@@ -31,7 +31,8 @@ from binet.util import generate_slices
 
 
 class NeuralNet(BaseEstimator):
-    def __init__(self, layersizes, max_iter=100, learning_rate=0.05,
+    def __init__(self, n_inputs, layersizes=None, max_iter=100,
+                 learning_rate=0.05,
                  activation="ReLU", output="softmax", loss="crossentropy",
                  l2_penalty=0.0, l1_penalty=0.0,
                  dropout=0.0, input_dropout=0.0, batch_size=64,
@@ -50,6 +51,7 @@ class NeuralNet(BaseEstimator):
         if random_state is None:
             random_state = op.rand_int()
 
+        self.n_inputs = n_inputs
         self.dropout = dropout
         self.verbose = verbose
         self.random_state = random_state
@@ -75,7 +77,13 @@ class NeuralNet(BaseEstimator):
         self.activationparams = activationparams
         if learning_rate_schedule not in ('constant', 'adaptive', 'simple', 'invscale', 'linear', 'power'):
             raise ValueError("Unknown learning rate schedule.")
-        self.reset(self.activationparams, self.random_state)
+        self.layers = []
+        if self.layersizes is not None:
+            self.setup_layers(self.activationparams)
+
+        if self.random_state is not None:
+            op.set_seed(self.random_state)
+        self.reset()
 
     layerclasses = {'default': FastDropoutLayer, 'basic': BasicLayer,
                     'dropin': DropinLayer, 'saltpepper': SaltPepperLayer,
@@ -85,26 +93,12 @@ class NeuralNet(BaseEstimator):
     def getLayerClass(cls, name):
         return NeuralNet.layerclasses[name]
 
-    def reset(self, activationparams=None, random_state=None):
-        self.statistics = pd.DataFrame(dtype=np.float64,
-            columns=('train_error', 'val_error', 'val_score', 'time'))
-        self.statistics.index.name = "epoch"
-        self.current_epoch = 0 # number of iterations
-        self.update_count = 0
-        self._best_params = None
-        self._best_score_va = np.finfo(np.float32).min
-        self._no_improvement_since = 0
-        self.layers = []
-        if random_state is None:
-            random_state = op.rand_int()
-        self.random_state = random_state
-        op.set_seed(self.random_state)
+    def setup_layers(self, activationparams=None):
         LayerClass = NeuralNet.getLayerClass(self.layerclass)
-
-        for i, layersize in enumerate(self.layersizes[1:]):
+        for i, layersize in enumerate(self.layersizes):
             actfun = self.activation
             is_output_canonical = False
-            if i == len(self.layersizes) - 2:
+            if i == len(self.layersizes) - 1:
                 actfun = self.output
                 if self.loss == "crossentropy" and (self.output == "softmax" or self.output == "sigmoid"):
                     is_output_canonical = True
@@ -115,9 +109,21 @@ class NeuralNet(BaseEstimator):
                 l1_penalty=self.l1_penalty, is_input_layer=(i==0),
                 is_canonical_top_layer=is_output_canonical,
                 activationparams=activationparams, dtype=self.dtype))
-
         self.layers[0].dropout = self.input_dropout
-        self.layers[0].setup(self.layersizes[0], batch_size=self.batch_size)
+
+    def reset(self, random_state=None):
+        self.statistics = pd.DataFrame(dtype=np.float64,
+            columns=('train_error', 'val_error', 'val_score', 'time'))
+        self.statistics.index.name = "epoch"
+        self.current_epoch = 0 # number of iterations
+        self.update_count = 0
+        self._best_params = None
+        self._best_score_va = np.finfo(np.float32).min
+        self._no_improvement_since = 0
+        if random_state is not None:
+            op.set_seed(self.random_state)
+        if len(self.layers) > 0:
+            self.layers[0].setup(self.n_inputs, batch_size=self.batch_size)
         for l1, l2 in zip(self.layers[:-1], self.layers[1:]):
             l2.setup(l1.size, batch_size=self.batch_size)
 
@@ -145,7 +151,7 @@ class NeuralNet(BaseEstimator):
         if isinstance(self.learning_rate, (list, tuple)):
             lr = self.learning_rate
         else:
-            lr = [self.learning_rate] * (len(self.layersizes) - 1)
+            lr = [self.learning_rate] * len(self.layers)
         lr = np.array(lr)  # there would be trouble with op.to_op(net)
                              # if we converted this sooner!
         mu = self.momentum
@@ -312,19 +318,26 @@ class NeuralNet(BaseEstimator):
         '''Transforms the input X into predictions.
         Note: this essentially runs the forward pass, but without using dropout.
         '''
-        a = X
-        for i, l in enumerate(self.layers):
-            odr = 0.0
-            if l.dropout > 0:
-                #if i > 0:  # dont scale in the input layer
-                l.W *= (1.0 - l.dropout)
-                odr, l.dropout = l.dropout, 0.0
-            a = l.fprop(a, stream=op.streams[0])
-            if odr > 0:
-                l.dropout = odr
-                #if i > 0:
-                l.W /= (1.0 - l.dropout)
-        return a
+        # We run in batch mode so we're sure not to use more memory than
+        # the training forward passes.
+        out = op.empty((X.shape[0], self.layers[-1].size),
+                       dtype=self.dtype,
+                       use_gpu=type(X) == op.gpuarray.GPUArray)
+        for s in generate_slices(X.shape[0], self.batch_size):
+            a = X[s]
+            for i, l in enumerate(self.layers):
+                odr = 0.0
+                if l.dropout > 0:
+                    #if i > 0:  # dont scale in the input layer
+                    l.W *= (1.0 - l.dropout)
+                    odr, l.dropout = l.dropout, 0.0
+                a = l.fprop(a, stream=op.streams[0])
+                if odr > 0:
+                    l.dropout = odr
+                    #if i > 0:
+                    l.W /= (1.0 - l.dropout)
+            out[s] = a
+        return out
 
     def predict(self, X):
         out = self.transform(X)
@@ -359,7 +372,7 @@ class NeuralNet(BaseEstimator):
         return y, y_va
 
     def __getstate__(self):
-        state = [13, self.batch_size, self.max_iter, self.learning_rate, self.dropout,
+        state = [14, self.batch_size, self.max_iter, self.learning_rate, self.dropout,
             self.input_dropout, self.verbose, self.random_state, self.layers,
             self.current_epoch, self.momentum,
             self.activation, self.statistics, self.layersizes, self.dtype,
@@ -367,7 +380,7 @@ class NeuralNet(BaseEstimator):
             self.output, self.layerclass, self.l2_penalty, self.l1_penalty,
             self.loss, self.output_weights, self.update_count,
             self.convergence_iter_tol, self.fraction_validation_set,
-            self.early_stopping, self.activationparams]
+            self.early_stopping, self.activationparams, self.n_inputs]
         return state
 
     def __setstate__(self, state):
@@ -385,7 +398,8 @@ class NeuralNet(BaseEstimator):
             self.output, self.layerclass, self.l2_penalty, self.l1_penalty, \
             self.loss, self.output_weights, self.update_count, \
             self.convergence_iter_tol, self.fraction_validation_set, \
-            self.early_stopping, self.activationparams = state[1:29]
+            self.early_stopping, self.activationparams, \
+            self.n_inputs = state[1:30]
         self._no_improvement_since = 0
 
     @property
@@ -403,5 +417,7 @@ class NeuralNet(BaseEstimator):
         trying out different parameter settings. We need to reset the net to
         recreate the layers with the new parameters afterwards.'''
         super(NeuralNet, self).set_params(**params)
-        self.reset()
+        if self.layersizes is not None:
+            self.setup_layers(self.activationparams)
+        self.reset(self.random_state)
         return self
