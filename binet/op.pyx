@@ -57,6 +57,7 @@ __pycuda_device = None
 try:
     import pycuda.gpuarray as gpuarray
     import pycuda.curandom as curand
+    import pycuda.driver as drv
     from pycuda.curandom import XORWOWRandomNumberGenerator
     from pycuda.elementwise import ElementwiseKernel
     from pycuda import cumath
@@ -412,6 +413,10 @@ cpdef to_cpu(x, stream=None):
     return x
 
 
+cpdef is_on_gpu(x):
+    return isinstance(x, gpuarray.GPUArray)
+
+
 cpdef empty(shape, dtype=np.float32, use_gpu=False):
     if use_gpu:
         return gpuarray.empty(shape, allocator=cuda_memory_pool.allocate,
@@ -424,6 +429,21 @@ cpdef empty_like(X):
     # We don't use empty_like so we are sure to use cuda_memory_pool
     # We don't use np.empty_like so this also works for CSR matrices
     return empty(X.shape, X.dtype, use_gpu=type(X) == gpuarray.GPUArray)
+
+
+cpdef zeros(shape, dtype=np.float32, use_gpu=False):
+    if use_gpu:
+        out = gpuarray.empty(shape, allocator=cuda_memory_pool.allocate,
+                              dtype=dtype)
+        out.fill(0)
+    else:
+        return np.zeros(shape, dtype=dtype)
+
+
+cpdef zeros_like(X):
+    # We don't use empty_like so we are sure to use cuda_memory_pool
+    # We don't use np.empty_like so this also works for CSR matrices
+    return zeros(X.shape, X.dtype, use_gpu=type(X) == gpuarray.GPUArray)
 
 
 
