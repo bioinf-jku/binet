@@ -153,7 +153,7 @@ class NeuralNet(BaseEstimator):
         else:
             lr = [self.learning_rate] * len(self.layers)
         lr = np.array(lr)  # there would be trouble with op.to_op(net)
-                             # if we converted this sooner!
+                           # if we converted this sooner!
         mu = self.momentum
 
         if self.learning_rate_schedule == 'adaptive':
@@ -281,7 +281,7 @@ class NeuralNet(BaseEstimator):
             op.streams[0].synchronize()
             return op.cross_entropy(target, pred, stream=op.streams[3])
         elif self.loss == "squarederror":
-            return mean_squared_error(target, pred)
+            return op.mean_squared_error(target, pred)
         else:
             raise NotImplementedError()
 
