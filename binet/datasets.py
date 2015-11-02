@@ -45,6 +45,7 @@ import pandas as pd
 try:
     import h5py
 except ImportError:
+    import warnings
     warnings.warn("h5py unavailable")
 
 # some machine specific paths for bioinf@jku machines
