@@ -217,13 +217,14 @@ class NeuralNet(BaseEstimator):
 
     def fit(self, X, y, X_va=None, y_va=None, skip_output=-1):
         y, y_va = self._check_y_shape(y, y_va)
+        assert X.shape[0] == y.shape[0], "X and y have the a different number of samples"
+        assert X.shape[1] == self.n_inputs, "X doesn't have the right number of features"
+        if X_va is not None:
+            assert X_va.shape[0] == y_va.shape[0], "X_va and y_va have the a different number of samples"
+            assert X_va.shape[1] == X.shape[1], "X_va doesn't have the right number of features"
 
         if X_va is None and self.fraction_validation_set > 0.0:
             X, X_va, y, y_va = train_test_split(X, y, test_size=self.fraction_validation_set)
-
-        assert(X.shape[0] == y.shape[0])
-        if X_va is not None:
-            assert(X_va.shape[0] == y_va.shape[0])
 
         oldverbose = self.verbose
         try:
