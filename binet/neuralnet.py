@@ -17,6 +17,7 @@ import os
 import time
 import sys
 import copy
+import warnings
 from scipy import sparse
 
 from sklearn.preprocessing import OneHotEncoder
@@ -223,14 +224,25 @@ class NeuralNet(BaseEstimator):
             assert X_va.shape[0] == y_va.shape[0], "X_va and y_va have the a different number of samples"
             assert X_va.shape[1] == X.shape[1], "X_va doesn't have the right number of features"
 
+
+        # PyCUDA, doesn't allow shuffling via indexing (`X[idx]`) so to have
+        # a random split, we just shuffle the data (if we're allowed to)
         if X_va is None and self.fraction_validation_set > 0.0:
-            X, X_va, y, y_va = train_test_split(X, y, test_size=self.fraction_validation_set)
+            if self.shuffle_data:
+                idx = np.arange(X.shape[0])
+                Xn, yn = op.shuffle_rows(X, y, idx=idx)
+            else:
+                warnings.warn("using first part of X as validation set without shuffling first")
+            vi = int(y.shape[0]*self.fraction_validation_set)
+            X, X_va, y, y_va = X[vi:], X[:vi], y[vi:], y[:vi]
 
         oldverbose = self.verbose
         try:
-            idx = np.arange(X.shape[0])
-            if self.shuffle_data:   # this is just to generate the storage
+            # generate storage for shuffling now
+            if self.shuffle_data:
+                idx = np.arange(X.shape[0])
                 Xn, yn = op.shuffle_rows(X, y, idx=idx)
+
             t0 = time.time()
             for i in range(self.current_epoch, self.max_iter):
                 if self.shuffle_data:
