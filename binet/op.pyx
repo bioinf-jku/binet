@@ -196,7 +196,11 @@ def init_gpu(gpu_id=0, seed=0):
 
     __cuda_mse_core = ElementwiseKernel(
         "float* target, float* pred, float* out",
-        "float d = target[i] - pred[i]; out[i] = d*d;", 'eltw_mse_core')
+        '''
+        float d = target[i] - pred[i];
+        out[i] = d == d ? d*d : 0.0;
+        ''',
+        'eltw_mse_core')
 
     __cuda_toplayer_delta = ElementwiseKernel(
         "float* a, float* y, float* out",
@@ -644,6 +648,7 @@ def mean_squared_error(target, pred, stream=None):
     else:
         out = target - pred
         out*=out
+        out[target != target] = 0  # deal with NaNs in target
         return 0.5*out.mean()
 
 
@@ -851,7 +856,7 @@ cpdef add_dot(a, b, out=None, int transA=False, int transB=False,
     elif isinstance(b, GPUCSRArray):
         return gpucsrarray.csrmmB(a, b, out, transA, transB, alpha, beta)
     else:
-        raise RuntimeError("Unsupported type")
+        raise RuntimeError("Unsupported types: %s, %s" % (type(a), type(b)))
     return out
 
 
