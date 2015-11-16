@@ -242,7 +242,6 @@ class NeuralNet(BaseEstimator):
             if self.shuffle_data:
                 idx = np.arange(X.shape[0])
                 Xn, yn = op.shuffle_rows(X, y, idx=idx)
-
             t0 = time.time()
             for i in range(self.current_epoch, self.max_iter):
                 if self.shuffle_data:
@@ -270,7 +269,7 @@ class NeuralNet(BaseEstimator):
             error_va = self._get_loss(y_va, out)
             score_va = self._get_score(y_va, out)
 
-            if self.early_stopping and score_va > self._best_score_va and self.current_epoch > 10:
+            if self.early_stopping and score_va > self._best_score_va and self.current_epoch > 0:
                 self._best_params = (copy.deepcopy(self.weights), copy.deepcopy(self.bias))
                 self._best_score_va = score_va
                 self._no_improvement_since = 0
