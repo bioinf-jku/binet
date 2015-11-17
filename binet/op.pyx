@@ -659,7 +659,7 @@ def mean_squared_error(target, pred, stream=None):
         out = target - pred
         out*=out
         out[target != target] = 0  # deal with NaNs in target
-        return 0.5*out.mean()
+        return 0.5*out.mean(0).sum()
 
 
 def clip(X, minval, maxval, out=None):
