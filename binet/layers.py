@@ -175,10 +175,12 @@ class BasicLayer(object):
         if fileversion > 1:
             self.size = state[12]
             self.activationparams = state[13]
+            self.dropout_value = state[14]
         else:
             self.size = self.W.shape[0]
             self.activationparams = None
-            self.dropout_value = state[14]
+            self.dropout_value = 0.0
+
 
         self.set_activation_function(self.activation, self.activationparams)
 
