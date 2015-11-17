@@ -30,8 +30,9 @@ A simple neural network on MNIST with 2 hidden layers::
     from binet.util import train
     dataset = load_dataset("mnist")
 
-    layers = (dataset[0].shape[1], 256, 256, dataset[1].shape[1])
-    net = NeuralNet(layers, max_iter=10, learning_rate=0.1, verbose=True, \
+    n_inputs = dataset[0].shape[1]
+    layers = (256, 256, dataset[1].shape[1])
+    net = NeuralNet(n_inputs, layers, max_iter=10, learning_rate=0.1, verbose=True, \
         activation="relu", shuffle_data=False, dropout=0.5, \
         input_dropout=0.2)
     net = train(net, dataset, use_gpu=True, skip_output=1)
