@@ -78,7 +78,8 @@ try:
     __cuda_dsigmoid_delta, __cuda_randomly_replace_elements, __cuda_l1reg, \
     __cuda_soft_threshold, __cuda_clip, __cuda_swapaxes01, \
     __cuda_sequence_to_tensor, __cuda_to_onehot, __cuda_leakyrelu, \
-    __cuda_dleakyrelu_delta, __cuda_mse_core = [None] * 18
+    __cuda_dleakyrelu_delta, __cuda_mse_core , \
+    __cuda_elu, __cuda_delu_delta = [None] * 20
 
 except ImportError:
     warnings.warn("CUDA libraries are not available.")
@@ -153,7 +154,8 @@ def init_gpu(gpu_id=0, seed=0):
         __cuda_dsigmoid_delta, __cuda_randomly_replace_elements, __cuda_l1reg, \
         __cuda_soft_threshold, __cuda_clip, _IS_CUDA_INITIALIZED, \
         __cuda_sequence_to_tensor, __cuda_to_onehot, \
-        __cuda_leakyrelu, __cuda_dleakyrelu_delta, __cuda_mse_core
+        __cuda_leakyrelu, __cuda_dleakyrelu_delta, __cuda_mse_core, \
+        __cuda_elu, __cuda_delu_delta
 
     if _IS_CUDA_INITIALIZED:
         warnings.warn("GPU was already initialized, will not initialize again!")
@@ -211,6 +213,14 @@ def init_gpu(gpu_id=0, seed=0):
         "float* d, float* a", "d[i] *= (1.0 - a[i]*a[i])", 'dtanh_delta')
     __cuda_dsigmoid_delta =ElementwiseKernel(
         "float* d, float* a", "d[i] *= a[i]*(1.0 - a[i])", 'dsigmoid_delta')
+
+    __cuda_elu =  ElementwiseKernel("float* x, float* o, float alpha",
+        'o[i] = x[i] > 0 ? x[i] : alpha*(expf(x[i])-1);',
+        'elu_eltw')
+    __cuda_delu_delta = ElementwiseKernel("float* d, float* a, float alpha",
+        'd[i] *= (a[i] > 0 ? 1.0 : a[i]+alpha);',
+        'delu_eltw')
+
 
     # drops "val" into x p times of the time. r contains (0, 1] uniform values.
     # Resulting mask will be stored in r, as well.
@@ -679,6 +689,27 @@ def dleakyrelu_delta(D, A, X, beta=0.1, stream=None):
     else:
         D *= np.where(A > 0, 1, beta)
     return D
+
+
+def elu(x, alpha=1.0, out=None, stream=None):
+    if out is None:
+        out = empty_like(x)
+    if isinstance(x, gpuarray.GPUArray):
+        __cuda_elu(x, out, alpha, stream=stream)
+    else:
+        out[:] = np.where(x > 0, x, alpha*(np.exp(x)-1))
+    return out
+
+
+def delu_delta(D, A, X, alpha=1.0, stream=None):
+    """ Calculates D *= (a > 0)"""
+    if isinstance(D, gpuarray.GPUArray):
+        __cuda_delu_delta(D, A, np.float32(alpha), stream=stream)
+    else:
+        D *= np.where(A > 0, 1, alpha+A)
+    return D
+
+
 
 
 ######## RANDOM NUMBERS ###########################################
