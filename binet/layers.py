@@ -59,7 +59,8 @@ class BasicLayer(object):
         self.activationparams=activationparams
         self.set_activation_function(self.activation, activationparams)
 
-    def setup(self, n_inputs, batch_size=64):
+    def setup(self, input_shape, batch_size=64):
+        n_inputs = np.prod(input_shape) # in case inputs are multidim (e.g. timeseries)
         n_outputs = self.size
         if self.activation == "relu":
             s = np.sqrt(2 / (n_outputs))  # http://arxiv.org/abs/1502.01852
@@ -81,7 +82,9 @@ class BasicLayer(object):
         'linear':  (op.identity, op.dlinear_delta),
         'tanh':    (op.tanh, op.dtanh_delta),
         'softmax': (op.softmax, op.identity),
-        'leakyrelu': (op.leakyrelu, op.dleakyrelu_delta)}
+        'leakyrelu': (op.leakyrelu, op.dleakyrelu_delta),
+        'elu': (op.elu, op.delu_delta)
+        }
 
 
     def set_activation_function(self, activation, params=None):
@@ -326,8 +329,8 @@ class AdaGradLayer(FastDropoutLayer):
     def __init__(self, *args, **kwargs):
         super(FastDropoutLayer, self).__init__(*args, **kwargs)
 
-    def setup(self, n_inputs, batch_size=64):
-        super(FastDropoutLayer, self).setup(n_inputs, batch_size)
+    def setup(self, input_shape, batch_size=64):
+        super(FastDropoutLayer, self).setup(input_shape, batch_size)
         self.gW = np.ones_like(self.dW)
         self.gb = np.ones_like(self.db)
 

@@ -102,15 +102,12 @@ def memcell_bwd_path(l, i):
 
 
 class LongShortTermMemoryLayer(object):
-    def __init__(self, size, n_inputs, max_seq_len, batch_size, has_forgetgate=True, dtype=np.float32):
+    def __init__(self, size, has_forgetgate=True, dtype=np.float32):
         self.has_forgetgate = has_forgetgate
-        self.max_seq_len = max_seq_len
         self.size = size
-        self.n_inputs = n_inputs
-        self.batch_size = batch_size
         self.dtype = dtype
+        self.dropout = 0.0  # TODO: implement dropout
         self.set_activation_function("tanh", "sigmoid")
-        self.setup()
 
     def reset(self):
         self.X = np.zeros((self.max_seq_len, self.batch_size, self.n_inputs), dtype=self.dtype)
@@ -157,7 +154,10 @@ class LongShortTermMemoryLayer(object):
             self.dRf = None
             self.dbf = None
 
-    def setup(self):
+    def setup(self, input_shape, batch_size):
+        self.max_seq_len, self.n_inputs = input_shape
+        self.batch_size = batch_size
+
         ws = (self.size, self.n_inputs)
         rs = (self.size, self.size)
         self.Wz = op.rand_gaussian(ws, sigma=0.05, dtype=self.dtype, use_gpu=False)
@@ -184,7 +184,7 @@ class LongShortTermMemoryLayer(object):
         '''Prepares the input for consumption by the LSTM'''
         return op.swapaxes01(X)  # new shape: Time x Samples x Features
 
-    def fprop(self, X):
+    def fprop(self, X, stream=None):
         self.X = self._prepare_input(X)
 
         # the non-recurrent parts (gate & input) can be calculated outside
@@ -304,18 +304,18 @@ class LongShortTermMemoryLayer(object):
                     self.Rz, self.Ri, self.Ro, self.Rf,
                     self.dRz, self.dRi, self.dRo, self.dRf,
                     self.bz, self.bi, self.bo, self.bf,
-                    self.dbz, self.dbi, self.dbo, self.dbf]
+                    self.dbz, self.dbi, self.dbo, self.dbf,]
         state = [1, self.has_forgetgate, self.max_seq_len,
                  self.size, self.n_inputs, self.batch_size,
                  self.inputfunction, self.outputfunction,
-                 self.dtype, weightstate]
+                 self.dtype, self.dropout, weightstate]
         return state
 
     def __setstate__(self, state):
         [fileversion, self.has_forgetgate, self.max_seq_len,
                  self.size, self.n_inputs, self.batch_size,
                  self.inputfunction, self.outputfunction,
-                 self.dtype, weightstate] = state
+                 self.dtype, self.dropout, weightstate] = state
         self.setup() # reset all variables (this needs self.size, ...)
 
         [self.Wz, self.Wi, self.Wo, self.Wf,
