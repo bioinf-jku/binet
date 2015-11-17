@@ -167,6 +167,9 @@ def train(net, dataset, fname=None, skip_output=25,
     else:
         X, y, Xvalid, yvalid = dataset
     try:
+        init_out = net.transform(X)
+        init_err = net._get_loss(y, init_out)
+        net.track_progress(time.time(), init_err, X, y, Xvalid, yvalid)
         net.fit(X, y, Xvalid, yvalid, skip_output=skip_output)
         #if net.verbose and net.current_epoch % skip_output != 0: # make sure we show the last line
         #    net.track_progress(time.time(), -1, X, y, Xvalid, yvalid)
