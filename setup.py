@@ -59,6 +59,5 @@ setup(
     ]),
     setup_requires=["cffi>=1.0.0"],
     cffi_modules=["binet/external_build.py:ffi"],
-    install_requires=['cffi>=1.0.0', 'numpy', 'scikit-learn', 'pycuda',
-                      'scikit-cuda'],
+    install_requires=['cffi>=1.0.0', 'numpy', 'scikit-learn'],
 )
