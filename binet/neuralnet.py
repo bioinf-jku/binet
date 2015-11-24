@@ -278,8 +278,8 @@ class NeuralNet(BaseEstimator):
         else:
             score_va, error_va = -1, -1
         if self.verbose:
-            vstr = "Val-Error: %3.6f\tVal-Score: %5.4f%%\t" % (error_va, score_va*100.0)
-            msg = "%3d:\tTrain-Error: %3.6f\t%s(%3.2fs)" % (self.current_epoch, error_tr, vstr, dt)
+            vstr = "Val-Loss: %3.6f\tVal-Score: %5.4f%%\t" % (error_va, score_va*100.0)
+            msg = "%3d:\tTrain-Loss: %3.6f\t%s(%3.2fs)" % (self.current_epoch, error_tr, vstr, dt)
             if self.logger is None:
                 print(msg)
                 sys.stdout.flush()
