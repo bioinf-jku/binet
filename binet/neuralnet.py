@@ -113,7 +113,7 @@ class NeuralNet(BaseEstimator):
 
     def reset(self, random_state=None):
         self.statistics = pd.DataFrame(dtype=np.float64,
-            columns=('train_error', 'val_error', 'val_score', 'time'))
+            columns=('train_loss', 'val_loss', 'val_score', 'time'))
         self.statistics.index.name = "epoch"
         self.current_epoch = 0 # number of iterations
         self.update_count = 0
@@ -277,7 +277,7 @@ class NeuralNet(BaseEstimator):
         else:
             score_va, error_va = -1, -1
         if self.verbose:
-            vstr = "Val-Loss: %3.6f\tVal-Score: %5.4f%%\t" % (error_va, score_va*100.0)
+            vstr = "Val-Loss: %3.6f\tVal-Score: %0.5f\t" % (error_va, score_va)
             msg = "%3d:\tTrain-Loss: %3.6f\t%s(%3.2fs)" % (self.current_epoch, error_tr, vstr, dt)
             if self.logger is None:
                 print(msg)
