@@ -82,8 +82,7 @@ class NeuralNet(BaseEstimator):
         if self.layersizes is not None:
             self.setup_layers(self.activationparams)
 
-        if self.random_state is not None:
-            op.set_seed(self.random_state)
+        op.set_seed(self.random_state)
         self.reset()
 
     layerclasses = {'default': FastDropoutLayer, 'basic': BasicLayer,

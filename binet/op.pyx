@@ -116,7 +116,7 @@ except ImportError:
 def set_seed(seed = 0):
     global __np_sampler, __cuda_sampler, _IS_CUDA_INITIALIZED
     if seed is 0:
-        seed = np.uint32(hash(os.getpid() + time.time()) % 4294967295)
+        seed = random_seed()
     __np_sampler = np.random.RandomState(seed)
     np.random.seed(seed)
 
@@ -729,6 +729,13 @@ cpdef rand_int():
     ''' Returns a single random integer number. '''
     return __np_sampler.randint(np.iinfo(np.int32).max)
 
+
+cpdef random_seed():
+    '''
+    Returns a seed that should be different for each process.
+    This is useful if we start many processes at the same time.
+    '''
+    return np.uint32(hash(os.getpid() + time.time()) % 4294967295)
 
 cpdef rand_gaussian_like(x, mu=0.0, sigma=1.0, out=None, stream=None):
     ''' Generates Gaussian distributed values.
