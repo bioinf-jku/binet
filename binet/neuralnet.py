@@ -144,7 +144,7 @@ class NeuralNet(BaseEstimator):
             op.inplace_scale_columns(delta, self.output_weights)
         for l in reversed(self.layers):
             delta = l.bprop(delta, momentum)
-        return 0.0
+        return delta # most of the time this is ignored anyhow
 
     def _get_current_learningrate(self, t):
         ''' Gets the learningrate and momentum parameters for epoch t.'''
