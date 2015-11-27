@@ -186,6 +186,7 @@ class NeuralNet(BaseEstimator):
 
         cur_lr, cur_momentum = self._get_current_learningrate(self.current_epoch)
         err = 0.0
+        nbatches = 0
         for s in generate_slices(X.shape[0], self.batch_size):
             Xtemp = X[s]
             ytemp = y[s]
@@ -212,8 +213,9 @@ class NeuralNet(BaseEstimator):
             self.update_count += 1
 
             err += self._get_loss(ytemp, out)
+            nbatches += 1
         self.current_epoch += 1
-        return err / y.shape[0]
+        return err / nbatches
 
     def fit(self, X, y, X_va=None, y_va=None, skip_output=-1):
         y, y_va = self._check_y_shape(y, y_va)
@@ -247,10 +249,14 @@ class NeuralNet(BaseEstimator):
                     Xn, yn = op.shuffle_rows(X, y, output=(Xn, yn), idx=idx)
                 else:
                     Xn, yn = X, y
-                err = float(self.partial_fit(Xn, yn, encode_labels=False))
                 if oldverbose and skip_output > 0:
                     self.verbose = (self.current_epoch % skip_output == 0)
+
+
+                err = float(self.partial_fit(Xn, yn, encode_labels=False))
                 self.track_progress(t0, err, Xn, yn, X_va, y_va)
+
+                # early stopping checks
                 if self._no_improvement_since >= self.convergence_iter_tol and self.early_stopping:
                     for i, l in enumerate(self.layers):
                         l.W = self._best_params[0][i]
