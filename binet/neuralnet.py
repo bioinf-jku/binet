@@ -31,6 +31,19 @@ from binet.layers import (BasicLayer, FastDropoutLayer,
 from binet.util import generate_slices
 
 
+def _create_snapshot(net):
+    import datetime
+    import pickle
+
+    ts = datetime.datetime.now().strftime("%Y%m%d.%H%M%S")
+    fname = "net_epoch%d_pid%d_%s.pkl" % (net.current_epoch, os.getpid(), ts)
+    if not os.path.exists("snapshots"):
+        warnings.warn("creating 'snapshots' directory to store pickled net")
+        os.mkdir("snapshots")
+    with open(os.path.join("snapshots", fname), "wb") as f:
+        pickle.dump(net, f, -1)
+
+
 class NeuralNet(BaseEstimator):
     def __init__(self, n_inputs, layersizes=None, max_iter=100,
                  learning_rate=0.05,
@@ -41,6 +54,7 @@ class NeuralNet(BaseEstimator):
                  convergence_iter_tol=30,  early_stopping=True,
                  shuffle_data=True,
                  learning_rate_schedule="constant", learning_rate_decay=None,
+                 snapshot_interval=None,
                  verbose=False, random_state=None, dtype=np.float32,
                  activationparams=None,
                  layerclass="default", logger=None,
@@ -76,6 +90,7 @@ class NeuralNet(BaseEstimator):
         self.fraction_validation_set = fraction_validation_set
         self.early_stopping = early_stopping
         self.activationparams = activationparams
+        self.snapshot_interval = snapshot_interval
         if learning_rate_schedule not in ('constant', 'adaptive', 'simple', 'invscale', 'linear', 'power'):
             raise ValueError("Unknown learning rate schedule.")
         self.layers = []
@@ -256,6 +271,11 @@ class NeuralNet(BaseEstimator):
                 err = float(self.partial_fit(Xn, yn, encode_labels=False))
                 self.track_progress(t0, err, Xn, yn, X_va, y_va)
 
+                if self.snapshot_interval is not None \
+                   and (self.snapshot_interval % self.current_epoch == 0) \
+                   and self.current_epoch > 0:
+                    _create_snapshot(self)
+
                 # early stopping checks
                 if self._no_improvement_since >= self.convergence_iter_tol and self.early_stopping:
                     for i, l in enumerate(self.layers):
@@ -389,7 +409,7 @@ class NeuralNet(BaseEstimator):
         return y, y_va
 
     def __getstate__(self):
-        state = [14, self.batch_size, self.max_iter, self.learning_rate, self.dropout,
+        state = [15, self.batch_size, self.max_iter, self.learning_rate, self.dropout,
             self.input_dropout, self.verbose, self.random_state, self.layers,
             self.current_epoch, self.momentum,
             self.activation, self.statistics, self.layersizes, self.dtype,
@@ -397,7 +417,8 @@ class NeuralNet(BaseEstimator):
             self.output, self.layerclass, self.l2_penalty, self.l1_penalty,
             self.loss, self.output_weights, self.update_count,
             self.convergence_iter_tol, self.fraction_validation_set,
-            self.early_stopping, self.activationparams, self.n_inputs]
+            self.early_stopping, self.activationparams, self.n_inputs,
+            self.snapshot_interval]
         return state
 
     def __setstate__(self, state):
@@ -418,6 +439,11 @@ class NeuralNet(BaseEstimator):
             self.early_stopping, self.activationparams, \
             self.n_inputs = state[1:30]
         self._no_improvement_since = 0
+
+        if fileversion < 15:
+            self.snapshot_interval=None
+        else:
+            self.snapshot_interval = state[30]
 
     @property
     def weights(self):
