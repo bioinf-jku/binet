@@ -264,11 +264,14 @@ class NeuralNet(BaseEstimator):
                     Xn, yn = op.shuffle_rows(X, y, output=(Xn, yn), idx=idx)
                 else:
                     Xn, yn = X, y
-                if oldverbose and skip_output > 0:
-                    self.verbose = (self.current_epoch % skip_output == 0)
-
 
                 err = float(self.partial_fit(Xn, yn, encode_labels=False))
+
+                if oldverbose and skip_output > 0:
+                    self.verbose = (self.current_epoch % skip_output) == 0
+                     # always show first epoch to measure times
+                    if self.current_epoch == 1:
+                        self.verbose = True
                 self.track_progress(t0, err, Xn, yn, X_va, y_va)
 
                 if self.snapshot_interval is not None \
