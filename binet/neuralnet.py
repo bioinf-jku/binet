@@ -99,6 +99,9 @@ class NeuralNet(BaseEstimator):
 
         op.set_seed(self.random_state)
         self.reset()
+        self._epoch_callbacks = []
+        self._minibatch_callbacks = []
+        self._epoch_callbacks.append(NeuralNet.track_progress)
 
     layerclasses = {'default': FastDropoutLayer, 'basic': BasicLayer,
                     'dropin': DropinLayer, 'saltpepper': SaltPepperLayer,
@@ -141,6 +144,7 @@ class NeuralNet(BaseEstimator):
             self.layers[0].setup(self.n_inputs, batch_size=self.batch_size)
         for l1, l2 in zip(self.layers[:-1], self.layers[1:]):
             l2.setup(l1.size, batch_size=self.batch_size)
+
 
     def forward_pass(self, X):
         # copy because of input-dropout
@@ -195,7 +199,6 @@ class NeuralNet(BaseEstimator):
         Note: Input-Dropout might overwrite parts of X!
 
         Expects y in One-Hot format'''
-        assert len(self.layers) <= len(op.streams) # needed when we call l.update
         if not sparse.isspmatrix_csr(X):
             assert(X.flags.c_contiguous)
 
@@ -224,11 +227,16 @@ class NeuralNet(BaseEstimator):
             self.backward_pass(out, ytemp, cur_momentum)
             op.streams[2].synchronize()
             for i, l in enumerate(self.layers):
-                l.update(cur_lr[i], stream=op.streams[i])
+                l.update(cur_lr[i], stream=op.streams[i % len(op.streams)])
             self.update_count += 1
 
-            err += self._get_loss(ytemp, out)
+            batch_error = self._get_loss(ytemp, out)
+            err += batch_error
             nbatches += 1
+
+            for cb in self._minibatch_callbacks:
+                cb(self, batch_error, Xtemp, ytemp)
+
         self.current_epoch += 1
         return err / nbatches
 
@@ -272,7 +280,9 @@ class NeuralNet(BaseEstimator):
                      # always show first epoch to measure times
                     if self.current_epoch == 1:
                         self.verbose = True
-                self.track_progress(t0, err, Xn, yn, X_va, y_va)
+                #self.track_progress(t0, err, Xn, yn, X_va, y_va)
+                for cb in self._epoch_callbacks:
+                    cb(self, t0, err, Xn, yn, X_va, y_va)
 
                 if self.snapshot_interval is not None \
                    and (self.snapshot_interval % self.current_epoch == 0) \
@@ -313,7 +323,6 @@ class NeuralNet(BaseEstimator):
                 sys.stdout.flush()
             else:
                 self.logger.info(msg)
-        #self.statistics.append((error_tr, verr, score_va, dt, self.current_epoch)
         self.statistics.loc[self.current_epoch] = (error_tr, error_va, score_va, dt)
 
     def _get_loss(self, target, pred):
@@ -447,6 +456,9 @@ class NeuralNet(BaseEstimator):
             self.snapshot_interval=None
         else:
             self.snapshot_interval = state[30]
+        self._epoch_callbacks = []
+        self._minibatch_callbacks = []
+        self._epoch_callbacks.append(NeuralNet.track_progress)
 
     @property
     def weights(self):
