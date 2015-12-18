@@ -36,11 +36,12 @@ def _create_snapshot(net):
     import pickle
 
     ts = datetime.datetime.now().strftime("%Y%m%d.%H%M%S")
+    path = os.path.expanduser("~/data/snapshots")
+    if not os.path.exists(path):
+        warnings.warn("creating directory '%s' to store pickled net" % path)
+        os.makedirs(path)
     fname = "net_epoch%d_pid%d_%s.pkl" % (net.current_epoch, os.getpid(), ts)
-    if not os.path.exists("snapshots"):
-        warnings.warn("creating 'snapshots' directory to store pickled net")
-        os.mkdir("snapshots")
-    with open(os.path.join("snapshots", fname), "wb") as f:
+    with open(os.path.join(path, fname), "wb") as f:
         pickle.dump(net, f, -1)
 
 
