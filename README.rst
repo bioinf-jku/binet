@@ -7,12 +7,13 @@ at the `Institute of Bioinformatics <http://www.bioinf.jku.at>`_
 of the `Johannes Kepler University Linz <http://www.jku.at>`_.
 
 binet can seamlessly and transparently switch between running on the CPU and
-on the GPU, using PyCUDA and scikits-cuda.
+on the GPU, using PyCUDA and scikits-cuda. It supports dense as well as
+sparse input data.
 
 The library was written with the goal of easily experimenting with new
 ideas regarding neural nets. While it is written with high performance
 in mind, ease of extensibility and to internal net state was the main
-stated design goal. As a result binet is fast, super flexible and quite
+stated design goal. As a result binet is fast, super flexible and yet also
 a bit hackish :)
 
 
