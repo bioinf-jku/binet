@@ -52,7 +52,10 @@ setup(
     # simple. Or you can use find_packages().
     packages=['binet'],
     ext_modules = cythonize([Extension("binet.op", ["binet/op.pyx"],
-              libraries=blas_info['libraries'],
+              libraries=blas_info.get('libraries', []),
+              extra_link_args=blas_info.get('extra_link_args', []),
+              extra_compile_args=blas_info.get('extra_compile_args', []) + ['-Wno-unused-function'],
+              define_macros=blas_info.get('define_macros', []),
               library_dirs=blas_info.get('library_dirs', []),
               include_dirs=[np.get_include()] + blas_info.get('include_dirs', []),
               )
