@@ -75,7 +75,6 @@ else:
     }
 
     void sampleUniform(float* out, int n, float a, float b, int seed) {
-        double tmp;
         int i;
         double aa = (double) a;
         double bb = (double) b;
