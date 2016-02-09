@@ -457,6 +457,7 @@ class NeuralNet(BaseEstimator):
             self.snapshot_interval=None
         else:
             self.snapshot_interval = state[30]
+        self.logger = None  # we don't serialize loggers
         self._epoch_callbacks = []
         self._minibatch_callbacks = []
         self._epoch_callbacks.append(NeuralNet.track_progress)
