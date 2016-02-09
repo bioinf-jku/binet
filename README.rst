@@ -55,6 +55,18 @@ binet requires:
 * GNU Scientific Library
 
 
+Citation
+--------
+
+If you use binet in a publication and found it useful, please cite
+
+    T Unterthiner, A Mayr, G Klambauer, M Steijaert, J Wenger, H Ceulemans, S Hochreiter
+    "Deep Learning as an Opportunity in Virtual Screening"
+    Deep Learning and Representation Learning Workshop (NIPS 2014)
+
+
+
+
 License
 -------
 binet is licensed under the
