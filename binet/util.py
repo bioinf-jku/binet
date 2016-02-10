@@ -34,7 +34,7 @@ try:
 except ImportError:
     warnings.warn("matplotlib unavailable")
 
-def generate_slices(n, size, include_leftovers=True):
+def generate_slices(n, size, ignore_last_minibatch_if_smaller=False):
     """Generates slices of given size up to n"""
     start, end = 0, 0
     for pack_num in range(int(n / size)):
@@ -42,7 +42,7 @@ def generate_slices(n, size, include_leftovers=True):
         yield slice(start, end, None)
         start = end
     # last slice might not be a full batch
-    if include_leftovers:
+    if not ignore_last_minibatch_if_smaller:
         if end < n:
             yield slice(end, n, None)
 

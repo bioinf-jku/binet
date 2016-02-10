@@ -98,6 +98,7 @@ class NeuralNet(BaseEstimator):
         if self.layersizes is not None:
             self.setup_layers(self.activationparams)
 
+        self.ignore_last_minibatch_if_smaller=False
         op.set_seed(self.random_state)
         self.reset()
         self._epoch_callbacks = []
@@ -206,7 +207,8 @@ class NeuralNet(BaseEstimator):
         cur_lr, cur_momentum = self._get_current_learningrate(self.current_epoch)
         err = 0.0
         nbatches = 0
-        for s in generate_slices(X.shape[0], self.batch_size):
+        for s in generate_slices(X.shape[0], self.batch_size, \
+                                 self.ignore_last_minibatch_if_smaller):
             Xtemp = X[s]
             ytemp = y[s]
 
@@ -217,7 +219,7 @@ class NeuralNet(BaseEstimator):
                 #Xtemp = op.to_gpu(Xtemp.A, stream=op.streams[0])
                 #ytemp = op.to_gpu(ytemp, stream=op.streams[1])
                 Xtemp = op.GPUCSRArray(Xtemp, allocator=a, stream=op.streams[0])
-                Xtemp = Xtemp.todense(allocator=a, stream=op.streams[0])
+                #Xtemp = Xtemp.todense(allocator=a, stream=op.streams[0])
                 if sparse.isspmatrix_csr(ytemp):
                     ytemp = op.to_gpu(ytemp.toarray(), stream=op.streams[1])
                 else:
@@ -370,11 +372,18 @@ class NeuralNet(BaseEstimator):
         '''
         # We run in batch mode so we're sure not to use more memory than
         # the training forward passes.
-        out = op.empty((X.shape[0], self.layers[-1].size),
-                       dtype=self.dtype,
-                       use_gpu=type(X) == op.gpuarray.GPUArray)
+        use_gpu = isinstance(self.layers[0].W, op.gpuarray.GPUArray)
+        out = op.empty((X.shape[0], self.layersizes[-1]),
+                       dtype=self.dtype, use_gpu=use_gpu)
         for s in generate_slices(X.shape[0], self.batch_size):
             a = X[s]
+            if sparse.isspmatrix_csr(X) and use_gpu:
+                alloc = op.cuda_memory_pool.allocate
+                #Xtemp = op.to_gpu(Xtemp.A, stream=op.streams[0])
+                #ytemp = op.to_gpu(ytemp, stream=op.streams[1])
+                a = op.GPUCSRArray(a, allocator=alloc, stream=op.streams[0])
+                a = a.todense(allocator=alloc, stream=op.streams[0])
+
             for i, l in enumerate(self.layers):
                 odr = 0.0
                 if l.dropout > 0:
