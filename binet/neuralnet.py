@@ -372,8 +372,8 @@ class NeuralNet(BaseEstimator):
         '''
         # We run in batch mode so we're sure not to use more memory than
         # the training forward passes.
-        use_gpu = isinstance(self.layers[0].W, op.gpuarray.GPUArray)
-        out = op.empty((X.shape[0], self.layersizes[-1]),
+        use_gpu = isinstance(X, op.gpuarray.GPUArray)
+        out = op.empty((X.shape[0], self.layers[-1].size),
                        dtype=self.dtype, use_gpu=use_gpu)
         for s in generate_slices(X.shape[0], self.batch_size):
             a = X[s]
