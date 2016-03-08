@@ -366,36 +366,49 @@ class NeuralNet(BaseEstimator):
         y, _ = self._check_y_shape(y, None)
         return self._get_score(y, p)
 
+    def _disable_dropout(self):
+        if hasattr(self, '_dropout_stack'):
+            raise RuntimeError('Dropout has already been disabled')
+        self._dropout_stack = []
+        for i, l in enumerate(self.layers):
+            self._dropout_stack.append(l.dropout)
+            if l.dropout > 0:
+                l.W *= (1.0 - l.dropout)
+                l.dropout = 0.0
+
+    def _enable_dropout(self):
+        if not hasattr(self, '_dropout_stack'):
+            raise RuntimeError('Dropout was never disabled')
+        self._dropout_stack
+        for i, l in enumerate(self.layers):
+            if self._dropout_stack[i] > 0:
+                l.dropout = self._dropout_stack[i]
+                l.W /= (1.0 - l.dropout)
+        del(self._dropout_stack)
+
     def transform(self, X):
         '''Transforms the input X into predictions.
         Note: this essentially runs the forward pass, but without using dropout.
         '''
+
         # We run in batch mode so we're sure not to use more memory than
         # the training forward passes.
-        use_gpu = isinstance(X, op.gpuarray.GPUArray)
+        use_gpu = isinstance(self.layers[-1].W, op.gpuarray.GPUArray)
         out = op.empty((X.shape[0], self.layers[-1].size),
                        dtype=self.dtype, use_gpu=use_gpu)
-        for s in generate_slices(X.shape[0], self.batch_size):
-            a = X[s]
-            if sparse.isspmatrix_csr(X) and use_gpu:
-                alloc = op.cuda_memory_pool.allocate
-                #Xtemp = op.to_gpu(Xtemp.A, stream=op.streams[0])
-                #ytemp = op.to_gpu(ytemp, stream=op.streams[1])
-                a = op.GPUCSRArray(a, allocator=alloc, stream=op.streams[0])
-                a = a.todense(allocator=alloc, stream=op.streams[0])
 
-            for i, l in enumerate(self.layers):
-                odr = 0.0
-                if l.dropout > 0:
-                    #if i > 0:  # dont scale in the input layer
-                    l.W *= (1.0 - l.dropout)
-                    odr, l.dropout = l.dropout, 0.0
-                a = l.fprop(a, stream=op.streams[0])
-                if odr > 0:
-                    l.dropout = odr
-                    #if i > 0:
-                    l.W /= (1.0 - l.dropout)
-            out[s] = a
+        self._disable_dropout()
+        try:
+            for s in generate_slices(X.shape[0], self.batch_size):
+                a = X[s]
+                if sparse.isspmatrix_csr(X) and use_gpu:
+                    alloc = op.cuda_memory_pool.allocate
+                    a = op.GPUCSRArray(a, allocator=alloc, stream=op.streams[0])
+                    a = a.todense(allocator=alloc, stream=op.streams[0])
+
+                out[s] = self.forward_pass(a)
+        finally:
+            self._enable_dropout()
         return out
 
     def predict(self, X):
