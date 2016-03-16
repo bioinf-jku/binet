@@ -151,7 +151,7 @@ class NeuralNet(BaseEstimator):
     def forward_pass(self, X):
         # copy because of input-dropout
         if self.layers[0].dropout > 0.0:
-            a = op.copy(X, stream=op.streams[0])
+            a = op.copy_dense(X, stream=op.streams[0])
         else:
             a = X
         for l in self.layers:

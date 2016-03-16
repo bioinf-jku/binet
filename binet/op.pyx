@@ -1032,11 +1032,13 @@ def soft_threshold(X, alpha, out=None, stream=None):
 
 
 #### MISC ###############################################
-def copy(x, stream=None):
+def copy_dense(x, stream=None):
     if isinstance(x, gpuarray.GPUArray) and stream is not None:
         new = gpuarray.GPUArray(x.shape, x.dtype)
         memcpy_dtod_async(new.gpudata, x.gpudata, x.nbytes, stream=stream)
         return new
+    elif sp.sparse.issparse(x):
+        return x.A
     else:
         return x.copy()
 
