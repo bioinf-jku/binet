@@ -563,6 +563,13 @@ def std(X, axis=None, stream=None):
         return np.std(X, axis=axis)
 
 
+def var(X, axis=None, stream=None):
+    if isinstance(X, gpuarray.GPUArray):
+        return skcuda_misc.var(X, axis=axis, stream=stream)
+    else:
+        return np.var(X, axis=axis)
+
+
 def softmax(X, out=None, stream=None):
     if out is None:
         out = empty_like(X)
