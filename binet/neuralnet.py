@@ -103,7 +103,9 @@ class NeuralNet(BaseEstimator):
         self.reset()
         self._epoch_callbacks = []
         self._minibatch_callbacks = []
-        self._epoch_callbacks.append(NeuralNet.track_progress)
+        # use self.__class__ instead of NeuralNet in case
+        # subclasses implement track_progress themselves
+        self._epoch_callbacks.append(self.__class__.track_progress)
 
     layerclasses = {'default': FastDropoutLayer, 'basic': BasicLayer,
                     'dropin': DropinLayer, 'saltpepper': SaltPepperLayer,
