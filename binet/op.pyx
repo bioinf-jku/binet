@@ -939,6 +939,8 @@ def add_matvec(X, b, axis=None, out=None, stream=None):
     if type(X) == gpuarray.GPUArray:
         return skcuda_misc.add_matvec(X, b, axis=axis, out=out, stream=stream)
     else:
+        if len(b.shape) == 1:
+            b = b.reshape(-1, 1)
         if axis == 1:
             b = b.T
         elif axis == 0:
@@ -952,6 +954,8 @@ def mult_matvec(X, b, axis=None, out=None, stream=None):
     if type(X) == gpuarray.GPUArray:
         return skcuda_misc.mult_matvec(X, b, axis=axis, out=out, stream=stream)
     else:
+        if len(b.shape) == 1:
+            b = b.reshape(-1, 1)
         if axis == 1:
             b = b.T
         elif axis == 0:
@@ -965,6 +969,8 @@ def div_matvec(X, b, axis=None, out=None, stream=None):
     if type(X) == gpuarray.GPUArray:
         return skcuda_misc.div_matvec(X, b, axis=axis, out=out, stream=stream)
     else:
+        if len(b.shape) == 1:
+            b = b.reshape(-1, 1)
         if axis == 1:
             b = b.T
         elif axis == 0:
