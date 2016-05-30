@@ -51,11 +51,8 @@ except ImportError:
     warnings.warn("h5py unavailable")
 
 # some machine specific paths for bioinf@jku machines
-__datadir = {'cobra': '/data01/bioinf/data/',
-            'k40': '/home/k40data/data',
-            'hawk': '/home/daten/data',
-            'tomlap': '/media/scratch/data',
-            'blucomp': '/media/scratch/data'}
+__datadir = {'tomlap': '/media/scratch/data',
+             'blucomp': '/media/scratch/data'}
 _DATA_DIRECTORY = __datadir.get(platform.node(), os.path.expanduser("~/data"))
 
 
