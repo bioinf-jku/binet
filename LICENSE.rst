@@ -1,4 +1,4 @@
-Copyright © 2013-2015 Thomas Unterthiner
+Copyright © 2013-2016 Thomas Unterthiner
 All rights reserved.
 
 This program is free software; you can redistribute it and/or
