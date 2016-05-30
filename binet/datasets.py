@@ -42,6 +42,8 @@ import gc
 import numpy as np
 import pandas as pd
 
+from scipy import io
+
 try:
     import h5py
 except ImportError:
@@ -81,7 +83,8 @@ def load_dataset(dataset_name, return_testset=False, dtype=np.float32, revert_sc
             'rectangles': _create_rectangles,
             'convex': _create_convex,
             'covertype': _create_covertype,
-            'enwik8': _create_enwik8}
+            'enwik8': _create_enwik8,
+            'tox21': _create_tox21}
         cf = createfuncs.get(dataset_name, None)
         if cf is not None:
             l = logging.getLogger(__name__)
@@ -599,6 +602,42 @@ def _create_enwik8(directory):
         f.create_dataset('test', data=code_te)
         f.create_dataset('encode', data=encode_lookup)
         f.create_dataset('decode', data=decode_lookup)
+
+
+def _create_tox21(directory):
+    sparsity_cutoff = 0.05
+    urlbase = "http://www.bioinf.jku.at/research/deeptox/"
+    dst = os.path.join(_DATA_DIRECTORY, "raw")
+    fn_x_tr_d = _download_file(urlbase, 'tox21_dense_train.csv.gz', dst)
+    fn_x_tr_s = _download_file(urlbase, 'tox21_sparse_train.mtx.gz', dst)
+    fn_y_tr = _download_file(urlbase, 'tox21_labels_train.csv', dst)
+    fn_x_te_d = _download_file(urlbase, 'tox21_dense_test.csv.gz', dst)
+    fn_x_te_s = _download_file(urlbase, 'tox21_sparse_test.mtx.gz', dst)
+    fn_y_te = _download_file(urlbase, 'tox21_labels_test.csv', dst)
+    cpd = _download_file(urlbase, 'tox21_compoundData.csv', dst)
+
+    y_tr = pd.read_csv(fn_y_tr, index_col=0)
+    y_te = pd.read_csv(fn_y_te, index_col=0)
+    x_tr_dense = pd.read_csv(fn_x_tr_d, index_col=0).values
+    x_te_dense = pd.read_csv(fn_x_te_d, index_col=0).values
+    x_tr_sparse = io.mmread(fn_x_tr_s).tocsc()
+    x_te_sparse = io.mmread(fn_x_te_s).tocsc()
+
+    # filter out very sparse features
+    sparse_col_idx = ((x_tr_sparse > 0).mean(0) >= sparsity_cutoff).A.ravel()
+    x_tr = np.hstack([x_tr_dense, x_tr_sparse[:, sparse_col_idx].A])
+    x_te = np.hstack([x_te_dense, x_te_sparse[:, sparse_col_idx].A])
+
+    # The validation set consists of those samples with
+    # cross validation fold #5
+    info = pd.read_csv(cpd, index_col=0)
+    f = info.CVfold[info.set != 'test'].values
+    idx_va = f == 5.0
+
+    data = [['train', x_tr[~idx_va],  y_tr[~idx_va]],
+            ['valid', x_tr[idx_va],  y_tr[idx_va]],
+            ['test',  x_te,  y_te]]
+    _store(data, os.path.join(_DATA_DIRECTORY, "tox21.hdf5"))
 
 
 if __name__ == "__main__":
