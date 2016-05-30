@@ -79,7 +79,7 @@ try:
     __cuda_soft_threshold, __cuda_clip, __cuda_swapaxes01, \
     __cuda_sequence_to_tensor, __cuda_to_onehot, __cuda_leakyrelu, \
     __cuda_dleakyrelu_delta, __cuda_mse_core , \
-    __cuda_elu, __cuda_delu_delta = [None] * 20
+    __cuda_elu, __cuda_delu_delta, __cuda_sign = [None] * 21
 
 except ImportError:
     warnings.warn("CUDA libraries are not available.")
@@ -155,7 +155,7 @@ def init_gpu(gpu_id=0, seed=0):
         __cuda_soft_threshold, __cuda_clip, _IS_CUDA_INITIALIZED, \
         __cuda_sequence_to_tensor, __cuda_to_onehot, \
         __cuda_leakyrelu, __cuda_dleakyrelu_delta, __cuda_mse_core, \
-        __cuda_elu, __cuda_delu_delta
+        __cuda_elu, __cuda_delu_delta, __cuda_sign
 
     if _IS_CUDA_INITIALIZED:
         warnings.warn("GPU was already initialized, will not initialize again!")
@@ -220,6 +220,10 @@ def init_gpu(gpu_id=0, seed=0):
     __cuda_delu_delta = ElementwiseKernel("float* d, float* a, float alpha",
         'd[i] *= (a[i] > 0 ? 1.0 : a[i]+alpha);',
         'delu_eltw')
+
+    __cuda_sign = ElementwiseKernel("float* x, float* y",
+                                       "y[i] = copysignf(1.0f, x[i]);",
+                                       'eltw_sign')
 
 
     # drops "val" into x p times of the time. r contains (0, 1] uniform values.
@@ -491,6 +495,16 @@ exp = make_function(np.exp, cumath.exp)
 tanh = make_function(np.tanh, cumath.tanh)
 abs = make_function(np.abs, cumath.fabs)
 sqrt = make_function(np.sqrt, cumath.sqrt)
+
+
+def sign(x, out=None, stream=None):
+    if out is None:
+        out = empty_like(x)
+    if isinstance(x, gpuarray.GPUArray):
+        __cuda_sign(x, out, stream=stream)
+    else:
+        out = np.sign(x, out=out)
+    return out
 
 
 def sigmoid(x, out=None, stream=None):
