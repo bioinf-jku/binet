@@ -622,14 +622,31 @@ def _create_tox21(directory):
 
     # filter out very sparse features
     sparse_col_idx = ((x_tr_sparse > 0).mean(0) >= sparsity_cutoff).A.ravel()
-    x_tr = np.hstack([x_tr_dense, x_tr_sparse[:, sparse_col_idx].A])
-    x_te = np.hstack([x_te_dense, x_te_sparse[:, sparse_col_idx].A])
+    x_tr_sparse = x_tr_sparse[:, sparse_col_idx].A
+    x_te_sparse = x_te_sparse[:, sparse_col_idx].A
+
+    dense_col_idx = np.where(x_tr_dense.var(0) > 1e-6)[0]
+    x_tr_dense = x_tr_dense[:, dense_col_idx]
+    x_te_dense = x_te_dense[:, dense_col_idx]
 
     # The validation set consists of those samples with
     # cross validation fold #5
     info = pd.read_csv(cpd, index_col=0)
     f = info.CVfold[info.set != 'test'].values
     idx_va = f == 5.0
+
+    # normalize features
+    from sklearn.preprocessing import StandardScaler
+    s = StandardScaler()
+    s.fit(x_tr_dense[~idx_va])
+    x_tr_dense = s.transform(x_tr_dense)
+    x_te_dense = s.transform(x_te_dense)
+
+    x_tr_sparse = np.tanh(x_tr_sparse)
+    x_te_sparse = np.tanh(x_te_sparse)
+
+    x_tr = np.hstack([x_tr_dense, x_tr_sparse])
+    x_te = np.hstack([x_te_dense, x_te_sparse])
 
     data = [['train', x_tr[~idx_va],  y_tr[~idx_va]],
             ['valid', x_tr[idx_va],  y_tr[idx_va]],
