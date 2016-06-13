@@ -959,7 +959,7 @@ def add_matvec(X, b, axis=None, out=None, stream=None):
             b = b.T
         elif axis == 0:
             pass
-        elif X.shape[0] == b.shape[1]:
+        elif X.shape[0] == b.shape[1] or X.shape[1] == b.shape[0]:
             b = b.T
         return np.add(X, b) if out is None else np.add(X, b, out=out)
 
@@ -974,7 +974,7 @@ def mult_matvec(X, b, axis=None, out=None, stream=None):
             b = b.T
         elif axis == 0:
             pass
-        elif X.shape[0] == b.shape[1]:
+        elif X.shape[0] == b.shape[1] or X.shape[1] == b.shape[0]:
             b = b.T
         return np.multiply(X, b) if out is None else np.multiply(X, b, out=out)
 
@@ -989,7 +989,7 @@ def div_matvec(X, b, axis=None, out=None, stream=None):
             b = b.T
         elif axis == 0:
             pass
-        elif X.shape[0] == b.shape[1]:
+        elif X.shape[0] == b.shape[1] or X.shape[1] == b.shape[0]:
             b = b.T
         return np.divide(X, b) if out is None else np.divide(X, b, out=out)
 
