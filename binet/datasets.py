@@ -260,7 +260,7 @@ def _create_mnist(directory):
     urlbase = 'http://yann.lecun.com/exdb/mnist/'
     files = ['train-images-idx3-ubyte.gz', 'train-labels-idx1-ubyte.gz',
              't10k-images-idx3-ubyte.gz', 't10k-labels-idx1-ubyte.gz']
-    destdir = join(_DATA_DIRECTORY, "raw")
+    destdir = join(directory, "raw")
     for fname in files:
          _download_file(urlbase, fname, destdir)
     trainx = _read_mnist_image(join(destdir, "train-images-idx3-ubyte.gz"))
@@ -272,14 +272,14 @@ def _create_mnist(directory):
     data = [['train', trainx, trainy],
             ['valid', validx, validy],
             ['test', testx, testy]]
-    _process_and_store(data, join(_DATA_DIRECTORY, "mnist.hdf5"), rescale=True)
+    _process_and_store(data, join(directory, "mnist.hdf5"), rescale=True)
 
 
 def _create_norb(directory):
     '''Small NORB dataset from www.cs.nyu.edu/~ylclab/data/norb-v1.0-small/ '''
 
     urlbase = "http://www.cs.nyu.edu/~ylclab/data/norb-v1.0-small/"
-    dst = os.path.join(_DATA_DIRECTORY, "raw")
+    dst = os.path.join(directory, "raw")
     trainx = _read_norb_data(_download_file(urlbase,
         'smallnorb-5x46789x9x18x6x2x96x96-training-dat.mat.gz', dst))
     trainy = _read_norb_data(_download_file(urlbase,
@@ -302,7 +302,7 @@ def _create_norb(directory):
     data = [['train', trainx, trainy],
             ['valid', validx, validy],
             ['test', testx, testy]]
-    _process_and_store(data, os.path.join(_DATA_DIRECTORY, "norb.hdf5"), rescale=True)
+    _process_and_store(data, os.path.join(directory, "norb.hdf5"), rescale=True)
 
 
 def _create_norb_downsampled(directory):
@@ -321,7 +321,7 @@ def _create_norb_downsampled(directory):
     data = [['train', trainx,  tmp['trainy']],
             ['valid', validx,  tmp['validy']],
             ['test', testx,  tmp['testy']]]
-    _store(data, os.path.join(_DATA_DIRECTORY, "norb_downsampled.hdf5"))
+    _store(data, os.path.join(directory, "norb_downsampled.hdf5"))
 
 
 def _create_cifar10(directory):
@@ -330,7 +330,7 @@ def _create_cifar10(directory):
     logger.info("reading CIFAR10 data...")
     fname = _download_file("http://www.cs.toronto.edu/~kriz/",
                           "cifar-10-python.tar.gz",
-                          os.path.join(_DATA_DIRECTORY, "raw"))
+                          os.path.join(directory, "raw"))
     import tarfile
     with tarfile.open(fname) as tf:
         filemembers = tf.getmembers()
@@ -362,7 +362,7 @@ def _create_cifar10(directory):
     data = [['train', trainx, trainy],
             ['valid', validx, validy],
             ['test', testx, testy]]
-    dst = os.path.join(_DATA_DIRECTORY, "cifar10.hdf5")
+    dst = os.path.join(directory, "cifar10.hdf5")
     _process_and_store(data, dst, other, rescale=True)
     #imshow(np.rot90(traindata[882, ].reshape((3, 32, 32)).T), origin="lower")
 
@@ -392,10 +392,10 @@ def _create_cifar10bw(directory):
             ['valid', validx,  tmp['validy']],
             ['test', testx,  tmp['testy']]]
     other = {'labelnames': tmp['labelnames']}
-    _store(data, os.path.join(_DATA_DIRECTORY, "cifar10bw.hdf5"), other)
+    _store(data, os.path.join(directory, "cifar10bw.hdf5"), other)
 
 
-def _handle_larochelle_icml2007(fn, train_data_file, test_data_file,
+def _handle_larochelle_icml2007(directory, fn, train_data_file, test_data_file,
                                 rotate_images=True):
     '''Basic procedure to load the datasets from Larochelle et al., ICML 2007.
     Unfortunately the structure of the datasets differs sometimes,
@@ -408,7 +408,7 @@ def _handle_larochelle_icml2007(fn, train_data_file, test_data_file,
     '''
     import zipfile
     urlbase = "http://www.iro.umontreal.ca/~lisa/icml2007data/"
-    dst = os.path.join(_DATA_DIRECTORY, "raw")
+    dst = os.path.join(directory, "raw")
     f = _download_file(urlbase, '%s.zip' % fn, dst)
     with zipfile.ZipFile(f) as zf:
         tmp = np.loadtxt(zf.open(train_data_file))
@@ -427,17 +427,17 @@ def _handle_larochelle_icml2007(fn, train_data_file, test_data_file,
 
 
 def _create_mnist_basic(directory):
-    trainx, trainy, testx, testy = _handle_larochelle_icml2007("mnist",
+    trainx, trainy, testx, testy = _handle_larochelle_icml2007(directory, "mnist",
         'mnist_train.amat', 'mnist_test.amat', rotate_images=False)
     trainx, trainy, validx, validy = _split_dataset(trainx, trainy, 5/6.0)
     data = [['train', trainx, trainy],
             ['valid', validx, validy],
             ['test', testx, testy]]
-    _process_and_store(data, os.path.join(_DATA_DIRECTORY, "mnist_basic.hdf5"), rescale=True)
+    _process_and_store(data, os.path.join(directory, "mnist_basic.hdf5"), rescale=True)
 
 
 def _create_mnist_bgimg(directory):
-    trainx, trainy, testx, testy = _handle_larochelle_icml2007(
+    trainx, trainy, testx, testy = _handle_larochelle_icml2007(directory,
         "mnist_background_images",
         'mnist_background_images_train.amat',
         'mnist_background_images_test.amat')
@@ -445,11 +445,11 @@ def _create_mnist_bgimg(directory):
     data = [['train', trainx, trainy],
             ['valid', validx, validy],
             ['test', testx, testy]]
-    _process_and_store(data, os.path.join(_DATA_DIRECTORY, "mnist_bgimg.hdf5"), rescale=True)
+    _process_and_store(data, os.path.join(directory, "mnist_bgimg.hdf5"), rescale=True)
 
 
 def _create_mnist_bgrand(directory):
-    trainx, trainy, testx, testy = _handle_larochelle_icml2007(
+    trainx, trainy, testx, testy = _handle_larochelle_icml2007(directory,
         "mnist_background_random",
         'mnist_background_random_train.amat',
         'mnist_background_random_test.amat')
@@ -457,11 +457,11 @@ def _create_mnist_bgrand(directory):
     data = [['train', trainx, trainy],
             ['valid', validx, validy],
             ['test', testx, testy]]
-    _process_and_store(data, os.path.join(_DATA_DIRECTORY, "mnist_bgrand.hdf5"), rescale=True)
+    _process_and_store(data, os.path.join(directory, "mnist_bgrand.hdf5"), rescale=True)
 
 
 def _create_mnist_rot(directory):
-    trainx, trainy, testx, testy = _handle_larochelle_icml2007(
+    trainx, trainy, testx, testy = _handle_larochelle_icml2007(directory,
         "mnist_rotation_new",
         'mnist_all_rotation_normalized_float_train_valid.amat',
         'mnist_all_rotation_normalized_float_test.amat')
@@ -469,11 +469,11 @@ def _create_mnist_rot(directory):
     data = [['train', trainx, trainy],
             ['valid', validx, validy],
             ['test', testx, testy]]
-    _process_and_store(data, os.path.join(_DATA_DIRECTORY, "mnist_rot.hdf5"), rescale=True)
+    _process_and_store(data, os.path.join(directory, "mnist_rot.hdf5"), rescale=True)
 
 
 def _create_rectangles(directory):
-    trainx, trainy, testx, testy = _handle_larochelle_icml2007(
+    trainx, trainy, testx, testy = _handle_larochelle_icml2007(directory,
         "rectangles",
         'rectangles_train.amat',
         'rectangles_test.amat')
@@ -481,11 +481,11 @@ def _create_rectangles(directory):
     data = [['train', trainx, trainy],
             ['valid', validx, validy],
             ['test', testx, testy]]
-    _process_and_store(data, os.path.join(_DATA_DIRECTORY, "rectangles.hdf5"), rescale=True)
+    _process_and_store(data, os.path.join(directory, "rectangles.hdf5"), rescale=True)
 
 
 def _create_convex(directory):
-    trainx, trainy, testx, testy = _handle_larochelle_icml2007(
+    trainx, trainy, testx, testy = _handle_larochelle_icml2007(directory,
         "convex",
         'convex_train.amat',
         '50k/convex_test.amat')
@@ -493,12 +493,12 @@ def _create_convex(directory):
     data = [['train', trainx, trainy],
             ['valid', validx, validy],
             ['test', testx, testy]]
-    _process_and_store(data, os.path.join(_DATA_DIRECTORY, "convex.hdf5"), rescale=True)
+    _process_and_store(data, os.path.join(directory, "convex.hdf5"), rescale=True)
 
 
 def _create_covertype(directory):
     urlbase = 'https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/'
-    destdir = os.path.join(_DATA_DIRECTORY, "raw")
+    destdir = os.path.join(directory, "raw")
     fn = _download_file(urlbase, 'covtype.data.gz', destdir)
     with gzip.open(fn, "rb") as gzfile:
         X = pd.read_csv(gzfile, header=None).values
@@ -534,13 +534,13 @@ def _create_covertype(directory):
     s = np.ones(X.shape[1])
     s[quant_idx+int_idx] = scaler.std_
     other = {'center': m, "scale": s}
-    _store(data, os.path.join(_DATA_DIRECTORY, "covertype.hdf5"), other)
+    _store(data, os.path.join(directory, "covertype.hdf5"), other)
 
 
 def _create_enwik8(directory):
     '''Prepares the enwik8/hutter prize data: an extract from wikipedia.'''
     urlbase = 'http://mattmahoney.net/dc/'
-    destdir = os.path.join(_DATA_DIRECTORY, "raw")
+    destdir = os.path.join(directory, "raw")
     fn = _download_file(urlbase, 'enwik8.zip', destdir)
 
     # we first read the text as UTF-8, and then map each present character
@@ -592,7 +592,7 @@ def _create_enwik8(directory):
     del(data_tr, data_va, data_te)
     gc.collect()
 
-    fname = os.path.join(_DATA_DIRECTORY, "enwik8.hdf5")
+    fname = os.path.join(directory, "enwik8.hdf5")
     with h5py.File(fname, "w") as f:
         f.create_dataset('train', data=code_tr)
         f.create_dataset('valid', data=code_va)
@@ -601,10 +601,9 @@ def _create_enwik8(directory):
         f.create_dataset('decode', data=decode_lookup)
 
 
-def _create_tox21(directory):
-    sparsity_cutoff = 0.05
+def _create_tox21_impl(sparsity_cutoff, validation_fold, directory=_DATA_DIRECTORY):
     urlbase = "http://www.bioinf.jku.at/research/deeptox/"
-    dst = os.path.join(_DATA_DIRECTORY, "raw")
+    dst = os.path.join(directory, "raw")
     fn_x_tr_d = _download_file(urlbase, 'tox21_dense_train.csv.gz', dst)
     fn_x_tr_s = _download_file(urlbase, 'tox21_sparse_train.mtx.gz', dst)
     fn_y_tr = _download_file(urlbase, 'tox21_labels_train.csv', dst)
@@ -633,7 +632,7 @@ def _create_tox21(directory):
     # cross validation fold #5
     info = pd.read_csv(cpd, index_col=0)
     f = info.CVfold[info.set != 'test'].values
-    idx_va = f == 5.0
+    idx_va = f == float(validation_fold)
 
     # normalize features
     from sklearn.preprocessing import StandardScaler
@@ -647,11 +646,20 @@ def _create_tox21(directory):
 
     x_tr = np.hstack([x_tr_dense, x_tr_sparse])
     x_te = np.hstack([x_te_dense, x_te_sparse])
+    return (x_tr[~idx_va],  y_tr[~idx_va],
+            x_tr[idx_va], y_tr[idx_va],
+            x_te,  y_te)
 
-    data = [['train', x_tr[~idx_va],  y_tr[~idx_va]],
-            ['valid', x_tr[idx_va],  y_tr[idx_va]],
+
+def _create_tox21(directory):
+    sparsity_cutoff = 0.05
+    validation_fold = 5
+    d = _create_tox21_impl(sparsity_cutoff, validation_fold)
+    x_tr, y_tr, x_va, y_va, x_te, y_te = d
+    data = [['train', x_tr,  y_tr],
+            ['valid', x_va,  y_va],
             ['test',  x_te,  y_te]]
-    _store(data, os.path.join(_DATA_DIRECTORY, "tox21.hdf5"))
+    _store(data, os.path.join(directory, "tox21.hdf5"))
 
 
 if __name__ == "__main__":
