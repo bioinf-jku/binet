@@ -268,3 +268,10 @@ def print_system_information(additional_modules=[]):
              print("\t", m.__name__, m.__version__)
         except AttributeError:
             pass
+
+
+def get_timestamp(fmt='%Y%m%d_%H%M%S'):
+    '''Returns a string that contains the current date and time.'''
+    import datetime
+    now = datetime.datetime.now()
+    return datetime.datetime.strftime(now, fmt)
