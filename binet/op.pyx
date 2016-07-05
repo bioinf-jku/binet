@@ -79,7 +79,8 @@ try:
     __cuda_soft_threshold, __cuda_clip, __cuda_swapaxes01, \
     __cuda_sequence_to_tensor, __cuda_to_onehot, __cuda_leakyrelu, \
     __cuda_dleakyrelu_delta, __cuda_mse_core , \
-    __cuda_elu, __cuda_delu_delta, __cuda_sign = [None] * 21
+    __cuda_elu, __cuda_delu_delta, __cuda_sign, \
+    __cuda_binary_crossentropy_core = [None] * 22
 
 except ImportError:
     warnings.warn("CUDA libraries are not available.")
@@ -155,7 +156,7 @@ def init_gpu(gpu_id=0, seed=0):
         __cuda_soft_threshold, __cuda_clip, _IS_CUDA_INITIALIZED, \
         __cuda_sequence_to_tensor, __cuda_to_onehot, \
         __cuda_leakyrelu, __cuda_dleakyrelu_delta, __cuda_mse_core, \
-        __cuda_elu, __cuda_delu_delta, __cuda_sign
+        __cuda_elu, __cuda_delu_delta, __cuda_sign, __cuda_binary_crossentropy_core
 
     if _IS_CUDA_INITIALIZED:
         warnings.warn("GPU was already initialized, will not initialize again!")
@@ -194,7 +195,7 @@ def init_gpu(gpu_id=0, seed=0):
                                        'eltw_sigmoid')
     __cuda_crossentropy_core = ElementwiseKernel(
         "float* target, float* pred, float* out",
-        "out[i] = target[i] == target[i] ? target[i] * __logf(pred[i] + 1e-16) : 0;", 'eltw_ce_core')
+        "out[i] = target[i] == target[i] ? target[i] * __logf(pred[i] + 1e-16) : 0;", 'eltw_mce_core')
 
     __cuda_mse_core = ElementwiseKernel(
         "float* target, float* pred, float* out",
@@ -203,6 +204,14 @@ def init_gpu(gpu_id=0, seed=0):
         out[i] = d == d ? d*d : 0.0;
         ''',
         'eltw_mse_core')
+
+    __cuda_binary_crossentropy_core = ElementwiseKernel(
+        "float* target, float* pred, float* out",
+        '''
+        const float eps = 1e-16;
+        out[i] = target[i] * __logf(pred[i] + eps) + (1.0f-target[i]) * __logf(1.0f - pred[i] + eps);
+        out[i] = target[i] == target[i] ? out[i] : 0.0f;
+        ''',  'eltw_bce_core')
 
     __cuda_toplayer_delta = ElementwiseKernel(
         "float* a, float* y, float* out",
@@ -656,7 +665,7 @@ def dlinear_delta(D, A, X, stream=None):
     return D
 
 
-def cross_entropy(target, pred, stream=None):
+def multiclass_cross_entropy(target, pred, stream=None):
     if sp.sparse.issparse(target):
         return to_cpu(-sum(target.multiply(log(pred+__EPS)))) / target.shape[0]
     elif isinstance(target, gpuarray.GPUArray):
@@ -665,6 +674,22 @@ def cross_entropy(target, pred, stream=None):
         return -gpuarray.sum(out, stream=stream).get() / target.shape[0]
     else:
         out = target * log(pred+__EPS)
+        out[target != target] = 0  # deal with NaNs in target
+        return to_cpu(-sum(out)) / target.shape[0]
+
+
+def binary_cross_entropy(target, pred, stream=None):
+    if sp.sparse.issparse(target):
+        s = target.multiply(log(pred+__EPS))
+        s += (1-target).multiply(log(1.0 - pred+__EPS))
+        return to_cpu(-sum(s)) / target.shape[0]
+    elif isinstance(target, gpuarray.GPUArray):
+        out = empty_like(target)
+        __cuda_binary_crossentropy_core(target, pred, out, stream=stream)
+        return -gpuarray.sum(out, stream=stream).get() / target.shape[0]
+    else:
+        out = target * log(pred+__EPS)
+        out += (1.0-target) * log(1.0 - pred +__EPS)
         out[target != target] = 0  # deal with NaNs in target
         return to_cpu(-sum(out)) / target.shape[0]
 

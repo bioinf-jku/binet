@@ -331,9 +331,14 @@ class NeuralNet(BaseEstimator):
         self.statistics.loc[self.current_epoch] = (error_tr, error_va, score_va, dt)
 
     def _get_loss(self, target, pred):
+        op.streams[0].synchronize()
         if self.loss == "crossentropy":
-            op.streams[0].synchronize()
-            return op.cross_entropy(target, pred, stream=op.streams[3])
+            if self.output == 'softmax':
+                return op.multiclass_cross_entropy(target, pred, stream=op.streams[3])
+            elif self.output == 'sigmoid':
+                return op.binary_cross_entropy(target, pred, stream=op.streams[3])
+            else:
+                raise NotImplementedError()
         elif self.loss == "squarederror":
             return op.mean_squared_error(target, pred)
         else:

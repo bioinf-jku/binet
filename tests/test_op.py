@@ -342,7 +342,7 @@ def test_std():
     run_function_with_axis(X, X.std(0), X.std(1), X.std(), op.std, rtol=1e-4)
 
 
-def test_crossentropy():
+def test_multiclass_crossentropy():
     X = np.random.rand(100, 10).astype(np.float32)
     O = np.random.rand(100, 10).astype(np.float32)
     X /= X.sum(1)[:, None]
@@ -350,12 +350,12 @@ def test_crossentropy():
     Y_expected = -np.sum(X * np.log(O)) / X.shape[0]
     rtol=1e-4
     Y = np.empty_like(X)
-    Yhr = op.cross_entropy(X, O)
+    Yhr = op.multiclass_cross_entropy(X, O)
     assert_allclose(Y_expected, Yhr, err_msg="CPU, no target", rtol=rtol)
 
     Xd = op.to_gpu(X)
     Od = op.to_gpu(O)
-    Yd = op.cross_entropy(Xd, Od)
+    Yd = op.multiclass_cross_entropy(Xd, Od)
     assert_allclose(Y_expected, op.to_cpu(Yd), err_msg="GPU, no target", rtol=rtol)
 
 
