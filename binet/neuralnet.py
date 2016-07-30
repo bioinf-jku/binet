@@ -94,7 +94,6 @@ class NeuralNet(BaseEstimator):
         self.snapshot_interval = snapshot_interval
         if learning_rate_schedule not in ('constant', 'adaptive', 'simple', 'invscale', 'linear', 'power'):
             raise ValueError("Unknown learning rate schedule.")
-        self.layers = []
         if self.layersizes is not None:
             self.setup_layers(self.activationparams)
 
@@ -117,6 +116,7 @@ class NeuralNet(BaseEstimator):
 
     def setup_layers(self, activationparams=None):
         LayerClass = NeuralNet.getLayerClass(self.layerclass)
+        self.layers = []
         for i, layersize in enumerate(self.layersizes):
             actfun = self.activation
             is_output_canonical = False
@@ -142,6 +142,7 @@ class NeuralNet(BaseEstimator):
         self._best_params = None
         self._best_score_va = np.finfo(np.float32).min
         self._no_improvement_since = 0
+        self.ignore_last_minibatch_if_smaller=False
         if random_state is not None:
             op.set_seed(self.random_state)
         if len(self.layers) > 0:
@@ -339,7 +340,7 @@ class NeuralNet(BaseEstimator):
                 return op.binary_cross_entropy(target, pred, stream=op.streams[3])
             else:
                 raise NotImplementedError()
-        elif self.loss == "squarederror":
+        elif self.loss == "squarederror" or self.loss == 'mse':
             return op.mean_squared_error(target, pred)
         else:
             raise NotImplementedError()
@@ -490,6 +491,7 @@ class NeuralNet(BaseEstimator):
         self._epoch_callbacks = []
         self._minibatch_callbacks = []
         self._epoch_callbacks.append(NeuralNet.track_progress)
+        self.ignore_last_minibatch_if_smaller=False
 
     @property
     def weights(self):
