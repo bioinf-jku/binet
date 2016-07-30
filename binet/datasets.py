@@ -71,7 +71,8 @@ def load_dataset(dataset_name, return_testset=False, dtype=np.float32, revert_sc
         createfuncs = {
             'mnist': _create_mnist,
             'norb': _create_norb,
-            'cifar10': _create_cifar10,
+            'cifar10': _create_cifar10_flat,
+            'cifar10_img': _create_cifar10_img,
             'cifar10bw': _create_cifar10bw,
             'mnist_basic': _create_mnist_basic,
             'mnist_bgimg': _create_mnist_bgimg,
@@ -324,12 +325,11 @@ def _create_norb_downsampled(directory):
     _store(data, os.path.join(directory, "norb_downsampled.hdf5"))
 
 
-def _create_cifar10(directory):
-    ''' CIFAR-10, from www.cs.toronto.edu/~kriz/cifar.html.'''
+def _load_cifar10(directory):
     logger = logging.getLogger(__name__)
     logger.info("reading CIFAR10 data...")
     fname = _download_file("http://www.cs.toronto.edu/~kriz/",
-                          "cifar-10-python.tar.gz",
+                          "cifar-10-binary.tar.gz",
                           os.path.join(directory, "raw"))
     import tarfile
     with tarfile.open(fname) as tf:
@@ -338,32 +338,46 @@ def _create_cifar10(directory):
         trainy = np.zeros((0,), dtype=np.uint8)
         files = [f.name for f in filemembers if "data_batch" in f.name]
         files.sort()
-        for fname in files[0:len(files)-1]: # save last batch as validation
-            f = tf.extractfile(fname)
-            alldata = pickle.load(f, encoding='bytes')
-            d = alldata[b'data']
-            trainx = np.vstack((trainx, d))
-            trainy = np.concatenate((trainy, alldata[b'labels']))
-        trainy = trainy.reshape((-1, 1))
 
-        f = tf.extractfile(files[-1])
-        alldata = pickle.load(f, encoding='bytes')
-        validx = alldata[b'data']
-        validy = np.array(alldata[b'labels']).reshape((-1, 1))
+        def _read_file(fn):
+            f = tf.extractfile(fn)
+            tmp = np.frombuffer(f.read(), np.uint8).reshape(-1, 3073)
+            return tmp[:, 0].reshape(-1, 1), tmp[:, 1:].reshape(-1, 3*32*32)
 
-        f = tf.extractfile('cifar-10-batches-py/test_batch')
-        alldata = pickle.load(f, encoding='bytes')
-        testx = alldata[b'data']
-        testy = np.array(alldata[b'labels']).reshape((-1, 1))
-        f = tf.extractfile('cifar-10-batches-py/batches.meta')
-        meta = pickle.load(f, encoding='bytes')
-        other={'labelnames': meta[b'label_names']}
+        # save last batch as validation
+        traindata = [_read_file(fn) for fn in files[0:len(files)-1]]
+        y_tr = np.vstack([t[0] for t in traindata])
+        x_tr = np.vstack([t[1] for t in traindata])
 
-    data = [['train', trainx, trainy],
-            ['valid', validx, validy],
-            ['test', testx, testy]]
+        y_va, x_va = _read_file(files[-1])
+        y_te, x_te =  _read_file('cifar-10-batches-bin/test_batch.bin')
+        return x_tr, y_tr, x_va, y_va, x_te, y_te
+
+
+def _create_cifar10_flat(directory):
+    ''' CIFAR-10, from www.cs.toronto.edu/~kriz/cifar.html.'''
+    x_tr, y_tr, x_va, y_va, x_te, y_te = _load_cifar10(directory)
+
+    data = [['train', x_tr, y_tr],
+            ['valid', x_va, y_va],
+            ['test', x_te, y_te]]
     dst = os.path.join(directory, "cifar10.hdf5")
-    _process_and_store(data, dst, other, rescale=True)
+    _process_and_store(data, dst, rescale=True)
+    #imshow(np.rot90(traindata[882, ].reshape((3, 32, 32)).T), origin="lower")
+
+
+def _create_cifar10_img(directory):
+    ''' CIFAR-10 in nbatches x width x height x channels format
+    from www.cs.toronto.edu/~kriz/cifar.html.'''
+    x_tr, y_tr, x_va, y_va, x_te, y_te = _load_cifar10(directory)
+    x_tr, x_va, x_te = [x.reshape(-1, 3, 32, 32).transpose(0, 2, 3, 1)
+                        for x in (x_tr, x_va, x_te)]
+
+    data = [['train', x_tr, y_tr],
+            ['valid', x_va, y_va],
+            ['test', x_te, y_te]]
+    dst = os.path.join(directory, "cifar10_img.hdf5")
+    _store(data, dst)
     #imshow(np.rot90(traindata[882, ].reshape((3, 32, 32)).T), origin="lower")
 
 
