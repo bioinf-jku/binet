@@ -15,7 +15,7 @@ one-hot encoding.
 NOTE: This file can be executed. It then converts datasets from their original
 format into HDF5 files.
 
-    Usage:  datasets.py (mnist | norb | cifar10 | cifar10bw) [directory]
+    Usage:  datasets.py (mnist | norb | cifar10) [directory]
 '''
 
 from __future__ import print_function
@@ -73,7 +73,6 @@ def load_dataset(dataset_name, return_testset=False, dtype=np.float32, revert_sc
             'norb': _create_norb,
             'cifar10': _create_cifar10_flat,
             'cifar10_img': _create_cifar10_img,
-            'cifar10bw': _create_cifar10bw,
             'mnist_basic': _create_mnist_basic,
             'mnist_bgimg': _create_mnist_bgimg,
             'mnist_bgrand': _create_mnist_bgrand,
@@ -381,34 +380,6 @@ def _create_cifar10_img(directory):
     #imshow(np.rot90(traindata[882, ].reshape((3, 32, 32)).T), origin="lower")
 
 
-def _create_cifar10bw(directory):
-    '''Creates Black/White pictures out of the CIFAR10 images.
-
-    Greyscale conversion weights taken from en.wikipedia.org/wiki/Greyscale
-    '''
-    if not os.path.exists(os.path.join(directory, "cifar10.hdf5")):
-        _create_cifar10(directory)
-
-    def convert_to_greyscale(data):
-        ret = np.zeros((data.shape[0], data.shape[1]/3))
-        tmp = data[:].reshape((data.shape[0], 3, 32, 32))
-        for i in range(int(data.shape[0])):
-            ret[i, ] = 0.229*tmp[i, 0, :, :].reshape(-1) + \
-                       0.587*tmp[i, 1, :, :].reshape(-1) + \
-                       0.114*tmp[i, 2, :, :].reshape(-1)
-        return ret
-
-    tmp = h5py.File(os.path.join(directory, "cifar10.hdf5"))
-    trainx = convert_to_greyscale(tmp['trainx'])
-    validx = convert_to_greyscale(tmp['validx'])
-    testx = convert_to_greyscale(tmp['testx'])
-    data = [['train', trainx,  tmp['trainy']],
-            ['valid', validx,  tmp['validy']],
-            ['test', testx,  tmp['testy']]]
-    other = {'labelnames': tmp['labelnames']}
-    _store(data, os.path.join(directory, "cifar10bw.hdf5"), other)
-
-
 def _handle_larochelle_icml2007(directory, fn, train_data_file, test_data_file,
                                 rotate_images=True):
     '''Basic procedure to load the datasets from Larochelle et al., ICML 2007.
@@ -690,8 +661,6 @@ if __name__ == "__main__":
         _create_norb_half(directory)
     elif sys.argv[1].lower() == "cifar10":
         _create_cifar10(directory)
-    elif sys.argv[1].lower() == "cifar10bw":
-        _create_cifar10bw(directory)
     elif sys.argv[1].lower() == "norb-downsampled":
         _create_norb_downsampled(directory)
     else:
