@@ -586,7 +586,8 @@ def _create_enwik8(directory):
         f.create_dataset('decode', data=decode_lookup)
 
 
-def _create_tox21_impl(sparsity_cutoff, validation_fold, directory=_DATA_DIRECTORY):
+def create_tox21(sparsity_cutoff, validation_fold
+                       directory=_DATA_DIRECTORY, dtype=np.float32):
     urlbase = "http://www.bioinf.jku.at/research/deeptox/"
     dst = os.path.join(directory, "raw")
     fn_x_tr_d = _download_file(urlbase, 'tox21_dense_train.csv.gz', dst)
@@ -631,15 +632,19 @@ def _create_tox21_impl(sparsity_cutoff, validation_fold, directory=_DATA_DIRECTO
 
     x_tr = np.hstack([x_tr_dense, x_tr_sparse])
     x_te = np.hstack([x_te_dense, x_te_sparse])
-    return (x_tr[~idx_va],  y_tr[~idx_va],
-            x_tr[idx_va], y_tr[idx_va],
-            x_te,  y_te)
+
+    return (x_tr[~idx_va].astype(dtype, order='C'),
+            y_tr[~idx_va].astype(dtype, order='C'),
+            x_tr[idx_va].astype(dtype, order='C'),
+            y_tr[idx_va].astype(dtype, order='C'),
+            x_te.astype(dtype, order='C'),
+            y_te.astype(dtype, order='C'))
 
 
 def _create_tox21(directory):
     sparsity_cutoff = 0.05
     validation_fold = 5
-    d = _create_tox21_impl(sparsity_cutoff, validation_fold)
+    d = create_tox21(sparsity_cutoff, validation_fold)
     x_tr, y_tr, x_va, y_va, x_te, y_te = d
     data = [['train', x_tr,  y_tr],
             ['valid', x_va,  y_va],
