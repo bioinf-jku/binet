@@ -586,10 +586,10 @@ def _create_enwik8(directory):
         f.create_dataset('decode', data=decode_lookup)
 
 
-def create_tox21(sparsity_cutoff, validation_fold
-                       directory=_DATA_DIRECTORY, dtype=np.float32):
+def create_tox21(sparsity_cutoff, validation_fold,
+                 dtype=np.float32, download_directory=_DATA_DIRECTORY):
     urlbase = "http://www.bioinf.jku.at/research/deeptox/"
-    dst = os.path.join(directory, "raw")
+    dst = os.path.join(download_directory, "raw")
     fn_x_tr_d = _download_file(urlbase, 'tox21_dense_train.csv.gz', dst)
     fn_x_tr_s = _download_file(urlbase, 'tox21_sparse_train.mtx.gz', dst)
     fn_y_tr = _download_file(urlbase, 'tox21_labels_train.csv', dst)
@@ -634,11 +634,11 @@ def create_tox21(sparsity_cutoff, validation_fold
     x_te = np.hstack([x_te_dense, x_te_sparse])
 
     return (x_tr[~idx_va].astype(dtype, order='C'),
-            y_tr[~idx_va].astype(dtype, order='C'),
+            y_tr[~idx_va].values.astype(dtype, order='C'),
             x_tr[idx_va].astype(dtype, order='C'),
-            y_tr[idx_va].astype(dtype, order='C'),
+            y_tr[idx_va].values.astype(dtype, order='C'),
             x_te.astype(dtype, order='C'),
-            y_te.astype(dtype, order='C'))
+            y_te.values.astype(dtype, order='C'))
 
 
 def _create_tox21(directory):
