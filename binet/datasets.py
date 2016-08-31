@@ -56,7 +56,8 @@ __datadir = {'tomlap': '/media/scratch/data',
 _DATA_DIRECTORY = __datadir.get(platform.node(), os.path.expanduser("~/data"))
 
 
-def load_dataset(dataset_name, return_testset=False, dtype=np.float32, revert_scaling=False):
+def load_dataset(dataset_name, return_testset=False,
+                 dtype=np.float32, revert_scaling=False):
     '''Loads a dataset, given the filename of the HDF5 file.
 
     Returns 4 tuple of X, y, Xvalid, yvalid)
@@ -253,8 +254,6 @@ def _split_dataset(data, labels, fraction):
 def _create_mnist(directory):
     ''' MNIST dataset from yann.lecun.com/exdb/mnist/  '''
     from os.path import join
-
-    os.chdir(directory)
     logger = logging.getLogger(__name__)
     logger.info("reading data...")
     urlbase = 'http://yann.lecun.com/exdb/mnist/'
@@ -262,7 +261,7 @@ def _create_mnist(directory):
              't10k-images-idx3-ubyte.gz', 't10k-labels-idx1-ubyte.gz']
     destdir = join(directory, "raw")
     for fname in files:
-         _download_file(urlbase, fname, destdir)
+        _download_file(urlbase, fname, destdir)
     trainx = _read_mnist_image(join(destdir, "train-images-idx3-ubyte.gz"))
     trainy = _read_mnist_label(join(destdir, "train-labels-idx1-ubyte.gz"))
     testx = _read_mnist_image(join(destdir, "t10k-images-idx3-ubyte.gz"))
