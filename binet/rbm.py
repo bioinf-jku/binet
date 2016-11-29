@@ -163,6 +163,12 @@ class _BaseRBM(BaseEstimator, TransformerMixin):
         if self.use_pcd:
             self.h_samples_ = op.sample_binomial(h_neg)
 
+    def calculate_reconstruction_rmse(self, X):
+        H = self.transform(X)
+        R = self._mean_visibles(H)
+        d = (op.sum((R-X)**2))/X.shape[0]
+        return np.sqrt(op.to_cpu(d))
+
     def fit(self, X, y=None):
         """Fit the model to the data X.
 
@@ -184,11 +190,9 @@ class _BaseRBM(BaseEstimator, TransformerMixin):
 
             if self.verbose:
                 end = time.time()
-                H = self.transform(X)
-                R = self._mean_visibles(H)
-                d = np.sqrt((op.sum((R-X)**2))/X.shape[0])
+                rmse = self.calculate_reconstruction_rmse(X)
                 print("[%s] Iteration %d, ReconstructionRMSE %.4f  time = %.2fs"
-                      % (type(self).__name__, self.current_epoch, d, end - begin))
+                      % (type(self).__name__, self.current_epoch, rmse, end - begin))
                 begin = end
 
         return self
