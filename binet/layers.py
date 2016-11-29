@@ -69,9 +69,10 @@ class BasicLayer(object):
         s = max(s, 0.02)  # for some reason, large s don't work very well?!?
         #self.W = op.rand_gaussian(shape=(n_outputs, n_inputs), mu=0.0, sigma=s,
         #                          dtype=self.dtype, use_gpu=False)
-        s6 = np.sqrt(6)
-        d = n_inputs
-        self.W = np.random.uniform(-s6/np.sqrt(d), s6/np.sqrt(d), n_outputs*n_inputs).reshape(n_outputs, n_inputs).astype(self.dtype)
+
+        # TODO: 2016-11-29: for some reason we reverted to this init, but idk why???
+        s = np.sqrt(6) / np.sqrt(n_inputs)
+        self.W = op.rand_uniform((n_outputs, n_inputs), -s, +s)
         self.b = np.zeros((1, n_outputs), dtype=self.dtype)
         self.dW = np.zeros_like(self.W)
         self.db = np.zeros_like(self.b)
