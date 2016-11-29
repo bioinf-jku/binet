@@ -43,7 +43,7 @@ class _BaseRBM(BaseEstimator, TransformerMixin):
         self.dtype = dtype
 
         ws = (n_hidden, n_visibles)
-        self.W = op.rand_gaussian(ws, 0.0, 0.01, dtype, use_gpu=False)
+        self.W = op.rand_gaussian(ws, 0.0, 0.01, dtype)
         self.W = self.W.astype(np.float32)
         self.bh = np.zeros((1, self.n_hidden), dtype=dtype)
         self.bv = np.zeros((1, n_visibles), dtype=dtype)
