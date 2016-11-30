@@ -6,7 +6,7 @@ from Cython.Build import cythonize
 from codecs import open
 from os import path
 import numpy as np
-VERSION = '2016.07'
+VERSION = '2016.11'
 
 
 # Get the long description from the relevant file
@@ -23,7 +23,7 @@ setup(
 
     description='Deep Neural Net code for GPUs and CPUs',
     long_description=LONG_DESCRIPTION,
-    url='https://github.com/untom/binet',
+    url='https://github.com/bioinf-jku/binet',
 
     # Author details
     author='Thomas Unterthiner',
