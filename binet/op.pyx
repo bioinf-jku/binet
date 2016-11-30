@@ -838,22 +838,35 @@ def reorder_rows(A, idx, output=None):
         return A[idx]
 
 
-def shuffle_rows(X, y, output=None, idx=None):
+
+
+def shuffle_rows(X, y=None, output=None, idx=None):
+    ''' Shuffles the rows of X and y using the same permutation both times.'''
+
+    def _shuffle(x, idx, output=None):
+        if type(X) == gpuarray.GPUArray:
+            if output is None:
+                output = empty(x.shape, x.dtype, use_gpu=True)
+            __cuda_swap_rows(x, idx, output)
+            return x
+        else:
+            return x[idx]
+
     if idx is None:
         idx = np.arange(X.shape[0])
     __np_sampler.shuffle(idx)
+
+    use_gpu = False
     if type(X) == gpuarray.GPUArray:
-        idxd = gpuarray.to_gpu(np.array(idx, dtype=np.int32))
-        if output is None:
-            Xout = empty(X.shape, X.dtype, use_gpu=True)
-            yout = empty(y.shape, y.dtype, use_gpu=True)
-        else:
-            Xout, yout = output
-        __cuda_swap_rows(X, idxd, Xout)
-        __cuda_swap_rows(y, idxd, yout)
-        return Xout, yout
+        idx = gpuarray.to_gpu(np.array(idx, dtype=np.int32))
+
+    if y is None:
+        return _shuffle(X, idx, output)
     else:
-        return X[idx], y[idx]
+        if output is None:
+            return _shuffle(X, idx), _shuffle(y, idx)
+        else:
+            return _shuffle(X, idx, output[0]), _shuffle(y, idx, output[0])
 
 
 def randomly_replace_elements(X, p, val, stream=None):
