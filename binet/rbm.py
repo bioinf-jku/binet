@@ -197,6 +197,24 @@ class _BaseRBM(BaseEstimator, TransformerMixin):
 
         return self
 
+    def __getstate__(self):
+        state = [1, self.n_visibles, self.n_hidden, self.learning_rate,
+            self.momentum, self.batch_size, self.n_iter, self.use_pcd,
+            self.verbose, self.random_state, self.dtype,
+            self.W, self.bh, self.bv, self.h_samples_]
+        return state
+
+    def __setstate__(self, state):
+        [fileversion, self.n_visibles, self.n_hidden, self.learning_rate,
+            self.momentum, self.batch_size, self.n_iter, self.use_pcd,
+            self.verbose, self.random_state, self.dtype,
+            self.W, self.bh, self.bv, self.h_samples_] = state
+        self.dW = np.zeros_like(self.W)
+        self.dbh = np.zeros_like(self.bh)
+        self.dbv = np.zeros_like(self.bv)
+
+
+
 
 class BernoulliRBM(_BaseRBM):
     """Bernoulli Restricted Boltzmann Machine (RBM).
