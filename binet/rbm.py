@@ -30,7 +30,7 @@ class _BaseRBM(BaseEstimator, TransformerMixin):
     Has PCD and CD-1 training options. """
     def __init__(self, n_visibles, n_hidden=256, n_iter=100,
                  learning_rate=0.1, momentum=0.0, batch_size=64,
-                 verbose=0, use_pcd=True, random_state=None, dtype=np.float32):
+                 verbose=0, use_pcd=True, dtype=np.float32):
         self.n_visibles = n_visibles
         self.n_hidden = n_hidden
         self.learning_rate = learning_rate
@@ -39,7 +39,6 @@ class _BaseRBM(BaseEstimator, TransformerMixin):
         self.n_iter = n_iter
         self.use_pcd = use_pcd
         self.verbose = verbose
-        self.random_state = random_state
         self.dtype = dtype
 
         ws = (n_hidden, n_visibles)
@@ -200,14 +199,14 @@ class _BaseRBM(BaseEstimator, TransformerMixin):
     def __getstate__(self):
         state = [1, self.n_visibles, self.n_hidden, self.learning_rate,
             self.momentum, self.batch_size, self.n_iter, self.use_pcd,
-            self.verbose, self.random_state, self.dtype,
+            self.verbose, self.dtype,
             self.W, self.bh, self.bv, self.h_samples_]
         return state
 
     def __setstate__(self, state):
         [fileversion, self.n_visibles, self.n_hidden, self.learning_rate,
             self.momentum, self.batch_size, self.n_iter, self.use_pcd,
-            self.verbose, self.random_state, self.dtype,
+            self.verbose, self.dtype,
             self.W, self.bh, self.bv, self.h_samples_] = state
         self.dW = np.zeros_like(self.W)
         self.dbh = np.zeros_like(self.bh)
@@ -247,11 +246,6 @@ class BernoulliRBM(_BaseRBM):
     verbose : int, optional
         The verbosity level. The default, zero, means silent mode.
 
-    random_state : integer or numpy.RandomState, optional
-        A random number generator instance to define the state of the
-        random permutations generator. If an integer is given, it fixes the
-        seed. Defaults to the global numpy random number generator.
-
     Attributes
     ----------
     bh : array-like, shape (n_components,)
@@ -273,7 +267,7 @@ class BernoulliRBM(_BaseRBM):
     >>> model = BernoulliRBM(n_components=2)
     >>> model.fit(X)
     BernoulliRBM(batch_size=10, learning_rate=0.1, n_components=2, n_iter=10,
-           random_state=None, verbose=0)
+                 verbose=0)
 
     References
     ----------
@@ -288,11 +282,11 @@ class BernoulliRBM(_BaseRBM):
     """
     def __init__(self, n_visibles, n_hidden=256, n_iter=10,
                  learning_rate=0.1, momentum=0.0, batch_size=64,
-                 verbose=0, use_pcd=True, random_state=None, dtype=np.float32):
+                 verbose=0, use_pcd=True, dtype=np.float32):
         super(BernoulliRBM, self).__init__(n_visibles=n_visibles,
             n_hidden=n_hidden, n_iter=n_iter, learning_rate=learning_rate,
             momentum=momentum, batch_size=batch_size, verbose=verbose,
-            use_pcd=use_pcd, random_state=random_state, dtype=dtype)
+            use_pcd=use_pcd, dtype=dtype)
 
     def _mean_visibles(self, h):
         """Computes the probabilities P(v=1|h).
@@ -336,11 +330,11 @@ class GaussianRBM(_BaseRBM):
     """
     def __init__(self, n_visibles, n_hidden=256, n_iter=10,
                  learning_rate=0.1, momentum=0.0, batch_size=64,
-                 verbose=0, use_pcd=True, random_state=None, dtype=np.float32):
+                 verbose=0, use_pcd=True, dtype=np.float32):
         super(GaussianRBM, self).__init__(n_visibles=n_visibles,
             n_hidden=n_hidden, n_iter=n_iter, learning_rate=learning_rate,
             momentum=momentum, batch_size=batch_size, verbose=verbose,
-            use_pcd=use_pcd, random_state=random_state, dtype=dtype)
+            use_pcd=use_pcd, dtype=dtype)
 
     def _mean_visibles(self, h):
         """Computes the probabilities P(v=1|h).
