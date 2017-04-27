@@ -72,7 +72,7 @@ class BasicLayer(object):
 
         # TODO: 2016-11-29: for some reason we reverted to this init, but idk why???
         s = np.sqrt(6) / np.sqrt(n_inputs)
-        self.W = op.rand_uniform((n_outputs, n_inputs), -s, +s)
+        self.W = op.rand_uniform((n_outputs, n_inputs), -s, +s, dtype=self.dtype)
         self.b = np.zeros((1, n_outputs), dtype=self.dtype)
         self.dW = np.zeros_like(self.W)
         self.db = np.zeros_like(self.b)
