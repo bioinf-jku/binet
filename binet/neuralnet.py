@@ -23,7 +23,6 @@ from scipy import sparse
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.utils import check_random_state
 from sklearn.base import BaseEstimator
-from sklearn.cross_validation import train_test_split
 
 from binet import op
 from binet.layers import (BasicLayer, FastDropoutLayer,
