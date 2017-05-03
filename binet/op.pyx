@@ -899,7 +899,7 @@ cpdef add_dot(a, b, out=None, int transA=False, int transB=False,
     cdef int m, k, l, n
     m, k = (b.shape[0], b.shape[1]) if transB else (b.shape[1], b.shape[0])
     l, n = (a.shape[0], a.shape[1]) if transA else (a.shape[1], a.shape[0])
-    assert k == l
+    assert k == l, "Inner dimension must be equal"
     if out is None:
         use_gpu = isinstance(a, gpuarray.GPUArray) or isinstance(b, gpuarray.GPUArray)
         out = empty((n, m), a.dtype, use_gpu=use_gpu)
@@ -927,15 +927,15 @@ cpdef add_dot(a, b, out=None, int transA=False, int transB=False,
                         m, n, k, alpha, b.gpudata, lda, a.gpudata, ldb,
                         beta, out.gpudata, ldc)
         else:
-            assert(False)
+            assert(False), "Unsupported dtype in GPU-dot"
         if stream is not None:
             cublasSetStream(skcuda_misc._global_cublas_handle, 0)
     elif type(a) == np.ndarray and type(b) == np.ndarray:
         add_dot_npy(a, b, out, transA, transB, alpha, beta)
     elif sp.sparse.isspmatrix_csr(a):
-        assert a.dtype == np.float32 and b.dtype == np.float32
-        assert out.flags['C_CONTIGUOUS']
-        assert not sp.sparse.issparse(b)
+        assert a.dtype == np.float32 and b.dtype == np.float32, "dtype of a and b must be equal"
+        assert out.flags['C_CONTIGUOUS'], "output is not contiguous"
+        assert not sp.sparse.issparse(b), "a and b cannot both be sparse"
         # Note: we could use external.csrmm, but that isn't actually faster
         bb = b.T if transB else b
         n_vecs = bb.shape[1]
