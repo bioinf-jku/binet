@@ -62,17 +62,18 @@ class BasicLayer(object):
     def setup(self, input_shape, batch_size=64):
         n_inputs = np.prod(input_shape) # in case inputs are multidim (e.g. timeseries)
         n_outputs = self.size
+        n_avg = (n_inputs + n_outputs)/2
         if self.activation == "relu":
-            s = np.sqrt(2 / (n_outputs))  # http://arxiv.org/abs/1502.01852
+            s = np.sqrt(2 / n_avg)  # http://arxiv.org/abs/1502.01852
         else:
-            s = np.sqrt(2 / (n_inputs + n_outputs)) # Glorot & Bengio, 2010
-        s = max(s, 0.02)  # for some reason, large s don't work very well?!?
+            s = np.sqrt(1 / n_avg) # Glorot & Bengio, 2010
+        #s = max(s, 0.02)  # for some reason, large s don't work very well?!?
         #self.W = op.rand_gaussian(shape=(n_outputs, n_inputs), mu=0.0, sigma=s,
         #                          dtype=self.dtype, use_gpu=False)
 
-        # TODO: 2016-11-29: for some reason we reverted to this init, but idk why???
-        s = np.sqrt(6) / np.sqrt(n_inputs)
-        self.W = op.rand_uniform((n_outputs, n_inputs), -s, +s, dtype=self.dtype)
+        ## TODO: 2016-11-29: for some reason we reverted to this init, but idk why???
+        #s = np.sqrt(6) / np.sqrt(n_inputs)
+        self.W = op.rand_gaussian((n_outputs, n_inputs), 0, s, dtype=self.dtype)
         self.b = np.zeros((1, n_outputs), dtype=self.dtype)
         self.dW = np.zeros_like(self.W)
         self.db = np.zeros_like(self.b)
